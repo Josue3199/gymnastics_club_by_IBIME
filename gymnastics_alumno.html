@@ -155,12 +155,63 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 .qr-card{background:white;border-radius:24px;padding:2rem;width:100%;max-width:320px;text-align:center}
 
 /* ── MODAL PASS ── */
-#modalPass{position:fixed;inset:0;z-index:100;background:rgba(10,16,30,.95);display:none;align-items:center;justify-content:center;padding:1.5rem}
-#modalPass.on{display:flex;animation:fadeIn .3s ease}
+#modalPass{position:fixed;inset:0;z-index:100;background:rgba(10,16,30,.95);display:none;align-items:center;justify-content:center;padding:1.5rem;pointer-events:none}
+#modalPass.on{display:flex;animation:fadeIn .3s ease;pointer-events:all}
 .pass-card{background:#161d2e;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:2rem;width:100%;max-width:360px}
+
+/* ── MODAL HORARIOS ── */
+#modalHorarios.on{display:flex!important;animation:fadeIn .3s ease}
+
+/* ── BADGE TIEMPO REAL ── */
+.badge-now{background:#dcfce7;color:#15803d;animation:pulse-badge 1.5s infinite}
+.badge-gray{background:#f1f5f9;color:#64748b}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
 
 /* ── ALERTS ── */
 .alert-box{border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+
+/* ── RESPONSIVE ── */
+/* Mobile top bar hidden by default (shown via JS on small screens) */
+#mobileTopBar{display:none}
+
+@media(max-width:767px){
+  #mobileTopBar{display:flex!important}
+  #sidebar{transform:translateX(-100%);transition:transform .3s ease;top:0;z-index:55}
+  #sidebar.open{transform:translateX(0)}
+  #sidebarOverlay.on{display:block!important}
+  #main{margin-left:0!important;padding:1rem;padding-top:4rem}
+  #screen-portal{flex-direction:column}
+  /* Stats grid */
+  .stats-grid{grid-template-columns:1fr!important}
+  /* Quick access grid */
+  .quick-grid{grid-template-columns:1fr 1fr!important}
+  /* Credencial columna única */
+  #view-credencial .cred-grid{grid-template-columns:1fr!important}
+  /* Clases: panel info debajo del wizard */
+  #view-clases .clases-grid{flex-direction:column!important}
+  /* Modales bottom sheet */
+  #modalCarrito>div,#modalQR>div{border-radius:16px 16px 0 0!important;border-bottom-left-radius:0!important;border-bottom-right-radius:0!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;max-height:90vh!important;overflow-y:auto!important}
+  #modalPass .pass-card{border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;margin:0}
+  #toast{right:.5rem;left:.5rem;text-align:center}
+}
+
+@media(min-width:768px) and (max-width:1023px){
+  #sidebar{width:64px;padding:.8rem .4rem}
+  #sidebar .sb-logo-txt,#sidebar .sb-logo-sub,#sidebar .sb-uname,#sidebar .sb-uid,
+  #sidebar .sb-item span,#sidebar .sb-mem,#sidebar .sb-logout span,
+  #sidebar .sb-cart-btn span{display:none!important}
+  #sidebar .sb-item{justify-content:center;padding:.65rem}
+  #sidebar .sb-cart-btn{justify-content:center;padding:.65rem}
+  #sidebar .sb-logout{justify-content:center;padding:.65rem}
+  #main{margin-left:64px}
+  .stats-grid{grid-template-columns:1fr 1fr!important}
+  .quick-grid{grid-template-columns:1fr 1fr 1fr 1fr!important}
+}
+
+@media(min-width:1024px){
+  #sidebar{width:230px}
+  #main{margin-left:230px}
+}
 </style>
 </head>
 <body>
@@ -281,7 +332,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
       </div>
 
       <!-- Stats row -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.2rem">
+      <div class="stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.2rem">
         <div class="stat-card"><div class="accent" style="background:var(--azul)"></div><p class="stat-lbl">Inscripción</p><p id="memEstado" class="stat-val" style="font-size:1.1rem;margin-top:.4rem;color:#f59e0b">Pendiente</p></div>
         <div class="stat-card"><div class="accent" style="background:#10b981"></div><p class="stat-lbl">Mis Clases</p><p id="statMisClases" class="stat-val" style="color:#059669">0</p></div>
         <div class="stat-card" onclick="abrirCarrito()" style="cursor:pointer"><div class="accent" style="background:var(--rojo)"></div><p class="stat-lbl">Carrito</p><p id="statCarrito" class="stat-val" style="color:var(--rojo)">0</p></div>
@@ -306,7 +357,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 
       <!-- Accesos rápidos -->
       <p class="section-lbl">Acceso rápido</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem">
+      <div class="quick-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem">
         <div onclick="navTo('credencial')" class="card" style="padding:1rem;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
           <i class="fa-solid fa-id-card" style="color:var(--azul);font-size:1.3rem;display:block;margin-bottom:.4rem"></i>
           <span style="font-size:.58rem;font-weight:800;text-transform:uppercase;color:var(--txt2)">Credencial</span>
@@ -345,8 +396,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
               <div>
                 <p style="font-size:.5rem;text-transform:uppercase;letter-spacing:.1em;opacity:.5;font-weight:700">ID Matrícula</p>
                 <p id="cID" style="font-size:.82rem;font-weight:900;font-family:monospace;margin-bottom:.3rem"></p>
-                <p style="font-size:.5rem;text-transform:uppercase;letter-spacing:.1em;opacity:.5;font-weight:700">PIN inicial</p>
-                <p id="cPIN" style="font-size:.95rem;font-weight:900;letter-spacing:.25em"></p>
+
               </div>
               <div style="text-align:right"><p style="font-size:.5rem;text-transform:uppercase;opacity:.5;font-weight:700">Inscripción</p><p id="cVence" style="font-size:.7rem;font-weight:700"></p></div>
             </div>
@@ -786,7 +836,9 @@ function iniciarPortal(){
         }
     });
     // Primer acceso
-    if(USER.primerAcceso===true||(!USER.password))setTimeout(()=>$( 'modalPass').classList.add('on'),800);
+    if(USER.primerAcceso===true||(!USER.password)||(USER.pin&&String(USER.password||'')=== String(USER.pin||'')))setTimeout(()=>$( 'modalPass').classList.add('on'),800);
+    // Notificaciones automáticas cada 60 segundos
+    setInterval(checkClaseActual,60000);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -800,8 +852,17 @@ function navTo(id,btn){
     if(id==='historial')cargarHistorial();
     if(id==='misclases'){}
     const main=$('main');if(main)main.scrollTop=0;
+    // Cerrar sidebar en móvil al navegar
+    if(window.innerWidth<768)closeSidebar();
 }
-function toggleDrawer(){}
+function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('on');}
+function toggleSidebar(){
+    const sb=$('sidebar'),ov=$('sidebarOverlay');
+    const isOpen=sb.classList.contains('open');
+    if(isOpen){sb.classList.remove('open');ov.classList.remove('on');}
+    else{sb.classList.add('open');ov.classList.add('on');}
+}
+function toggleDrawer(){toggleSidebar();}
 
 // ════════════════════════════════════════════════════════════════
 // MEMBRESÍA
@@ -863,7 +924,6 @@ function renderCredencial(){
     $( 'cNombre').textContent=USER.nombre||''
     $( 'cNivel').textContent=USER.nivel||''
     $( 'cID').textContent=USER.id||''
-    $( 'cPIN').textContent=USER.pin||''
     $( 'cVence').textContent=USER.inscripcionPagada?'Inscripción Activa ✅':'Inscripción Pendiente ⏳'
     const qr=$( 'qrCredencial');qr.innerHTML='';
     new QRCode(qr,{text:USER.id,width:150,height:150,colorDark:'#1e3a6e',colorLight:'#ffffff'});
@@ -1012,20 +1072,113 @@ function actualizarPrecio(){
 
 function agregarAlCarrito(){
     if(ORDEN_ACTIVA){toast('⚠️ Tienes un pago pendiente');return;}
+    if(!DISCIPS_SEL.size){toast('⚠️ Selecciona al menos una disciplina');return;}
+    // Obtener horarios disponibles de las disciplinas seleccionadas
+    abrirModalHorarios();
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODAL HORARIOS
+// ════════════════════════════════════════════════════════════════
+let _horariosSeleccionados={}; // { claseId: { horarioId, dia, hora, horaFin, profesor } }
+
+function abrirModalHorarios(){
+    _horariosSeleccionados={};
+    const lista=$('horariosList');
+    lista.innerHTML='';
+    const disciplinaIds=[...DISCIPS_SEL];
+    let hayHorarios=false;
+    disciplinaIds.forEach(cid=>{
+        const clase=CATALOGO.find(c=>c.id===cid);
+        if(!clase)return;
+    const horarios=(clase.horarios||[]).filter(h=>typeof h.cupoMax!=='number'||h.cupoActual<h.cupoMax);
+        const div=document.createElement('div');
+        div.style.cssText='margin-bottom:1.2rem';
+        div.innerHTML='<p style="font-weight:900;font-size:.82rem;text-transform:uppercase;margin-bottom:.5rem;color:#1a2540">'+
+            (clase.icon||'🏋️')+' '+(clase.nombre||cid)+'</p>';
+        if(!horarios.length){
+            div.innerHTML+='<p style="font-size:.72rem;color:#64748b;font-style:italic;padding:.5rem;background:#f8f9fa;border-radius:8px">Sin horarios disponibles</p>';
+        } else {
+            hayHorarios=true;
+            horarios.forEach(h=>{
+                const lleno=h.cupoMax&&h.cupoActual>=h.cupoMax;
+                const cupoTexto=h.cupoMax?(h.cupoMax-h.cupoActual)+'/'+h.cupoMax+' lugares':'Cupo disponible';
+                const btn=document.createElement('div');
+                btn.id='hor-'+cid+'-'+h.id;
+                btn.style.cssText='padding:.75rem;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:.4rem;cursor:'+(lleno?'not-allowed':'pointer')+';opacity:'+(lleno?'.55':'1')+';transition:all .2s;background:white';
+                btn.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
+                    +'<div><p style="font-weight:800;font-size:.8rem">'+h.dia+' '+h.hora+(h.horaFin?' – '+h.horaFin:'')+'</p>'
+                    +'<p style="font-size:.68rem;color:#64748b;font-weight:600;margin-top:2px">👤 '+h.profesor+'</p></div>'
+                    +'<div style="text-align:right">'+(lleno?'<span style="background:#fef2f2;color:#ef4444;border-radius:6px;padding:2px 7px;font-size:.6rem;font-weight:800">Lleno</span>':'<span style="background:#f0fdf4;color:#16a34a;border-radius:6px;padding:2px 7px;font-size:.6rem;font-weight:700">'+cupoTexto+'</span>')
+                    +'</div></div>';
+                if(!lleno){
+                    btn.onclick=function(){
+                        // Deseleccionar otros de esta clase
+                        document.querySelectorAll('[id^="hor-'+cid+'-"]').forEach(el=>{
+                            el.style.borderColor='#e2e8f0';el.style.background='white';
+                        });
+                        this.style.borderColor='#1e3a6e';this.style.background='#eef3ff';
+                        _horariosSeleccionados[cid]={horarioId:h.id,dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||''};
+                    };
+                }
+                div.appendChild(btn);
+            });
+        }
+        lista.appendChild(div);
+    });
+    if(!hayHorarios){
+        lista.innerHTML='<p style="text-align:center;color:#64748b;font-size:.8rem;padding:2rem">No hay horarios disponibles para las disciplinas seleccionadas.<br>Contacta a recepción para más información.</p>';
+    }
+    $('modalHorarios').classList.add('on');
+}
+
+function cerrarModalHorarios(){$('modalHorarios').classList.remove('on');}
+
+function confirmarHorarios(){
+    const disciplinaIds=[...DISCIPS_SEL];
+    // Validar que haya un horario seleccionado por cada disciplina que tenga horarios
+    const claseConHorarios=disciplinaIds.filter(cid=>{
+        const clase=CATALOGO.find(c=>c.id===cid);
+        return clase&&(clase.horarios||[]).filter(h=>!h.cupoMax||h.cupoActual<h.cupoMax).length>0;
+    });
+    for(const cid of claseConHorarios){
+        if(!_horariosSeleccionados[cid]){
+            const clase=CATALOGO.find(c=>c.id===cid);
+            toast('⚠️ Selecciona un horario para: '+(clase?.nombre||cid));return;
+        }
+    }
     const tabla=AREA_SEL==='fitness'?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
     const c=tabla[PKG]||tabla[4];
     const esFit=AREA_SEL==='fitness';
     // Quitar mensualidad anterior de esta área
     CART=CART.filter(x=>!(x.tipo==='mensualidad'&&x.area===AREA_SEL));
-    const nombres=[...new Set([...DISCIPS_SEL].map(id=>{const it=CATALOGO.find(c=>c.id===id);return it?.nombre||'';}))];
-    CART.push({
-        id:'MEN-'+AREA_SEL,
-        nombre:'Paquete '+(esFit?'Fitness':'Gimnasia')+' — '+PKG+'/sem ('+PKG*4+' clases/mes)',
-        precio:c.p,icon:esFit?'🏃':'🤸',tipo:'mensualidad',area:AREA_SEL,
-        frecuenciaSem:PKG,numClases:PKG*4,clasesIds:[...DISCIPS_SEL],clasesNombres:nombres
+    const nombres=[...new Set(disciplinaIds.map(id=>{const it=CATALOGO.find(c=>c.id===id);return it?.nombre||'';}))];
+    // Crear ítems de clase individuales con horario
+    disciplinaIds.forEach(cid=>{
+        const clase=CATALOGO.find(c=>c.id===cid);if(!clase)return;
+        const h=_horariosSeleccionados[cid];
+        const nombreClase=(clase.nombre||cid)+(h?' — '+h.dia+' '+h.hora:'');
+        CART=CART.filter(x=>x.claseId!==cid);
+        CART.push({
+            id:'CLASE_'+cid,
+            nombre:nombreClase,
+            profesor:h?.profesor||'',
+            disciplina:clase.nombre||cid,
+            horarioId:h?.horarioId||'',
+            claseId:cid,
+            area:AREA_SEL,
+            frecuencia:PKG,
+            precio:c.p,
+            icon:clase.icon||'🏋️',
+            tipo:'clase',
+            dia:h?.dia||'',
+            hora:h?.hora||'',
+            horaFin:h?.horaFin||''
+        });
     });
     actualizarBadge();
-    toast('🛒 Agregado al carrito');
+    cerrarModalHorarios();
+    toast('🛒 Clases agregadas al carrito');
     // Volver al paso 1
     volverPaso(1);
     setStep(1);
@@ -1065,6 +1218,8 @@ function actualizarBadge(){
     const b=$('cartBadge');const n=CART.length;
     if(b){b.textContent=n;b.style.display=n?'flex':'none';}
     const sc=$('statCarrito');if(sc)sc.textContent=n;
+    // Mobile cart badge
+    const mb=$('mobileCartBadge');if(mb){mb.textContent=n;mb.style.display=n?'flex':'none';}
 }
 function abrirCarrito(){
     if(!CART.length){toast('🛒 El carrito está vacío');return;}
@@ -1146,50 +1301,104 @@ async function cancelarOrden(){if(!confirm('¿Cancelar la orden pendiente?'))ret
 // ════════════════════════════════════════════════════════════════
 // MIS CLASES
 // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// HELPERS DE TIEMPO (zona horaria México)
+// ════════════════════════════════════════════════════════════════
+function ahoraMX(){
+    const str=new Date().toLocaleString('es-MX',{timeZone:'America/Mexico_City'});
+    return new Date(str);
+}
+function diaSemana(d){
+    // Retorna nombre del día en español
+    const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    return dias[d.getDay()];
+}
+function estadoClaseRT(r){
+    if(r.asistencia===true)return{txt:'Asistencia registrada',cls:'badge-green',icon:'✅'};
+    if(r.falta===true)return{txt:'Falta registrada',cls:'badge-red',icon:'❌'};
+    if(r.estado==='pre-reserva'||r.estado==='pendiente_pago')return{txt:'⏳ Pago pendiente',cls:'badge-amber',icon:'⏳'};
+    if(r.estado!=='confirmada')return null; // no calcular para no confirmadas
+    if(!r.dia||!r.hora)return{txt:'Confirmada',cls:'badge-green',icon:'✅'};
+    const ahora=ahoraMX();
+    const hoyDia=diaSemana(ahora);
+    if(hoyDia.toLowerCase().trim()!==String(r.dia||'').toLowerCase().trim())return{txt:'Otro día',cls:'badge-gray',icon:'📅'};
+    // Misma clase hoy
+    const [hh,mm]=(r.hora||'00:00').split(':').map(Number);
+    const inicioMin=hh*60+mm;
+    const ahoraMin=ahora.getHours()*60+ahora.getMinutes();
+    let finMin=inicioMin+60; // default 1 hora
+    if(r.horaFin){const[fh,fm]=r.horaFin.split(':').map(Number);finMin=fh*60+fm;}
+    const diffInicio=inicioMin-ahoraMin;
+    if(ahoraMin>=finMin)return{txt:'Ya transcurrió',cls:'badge-gray',icon:'🕒',extra:'Clase descontada de tu paquete (pendiente de confirmación por recepción)'};
+    if(diffInicio<=0&&ahoraMin<finMin)return{txt:'¡Es ahora! Entra ya',cls:'badge-now',icon:'🟢'};
+    if(diffInicio>0&&diffInicio<=30)return{txt:'¡Es ahora! Entra ya',cls:'badge-now',icon:'🟢'};
+    if(diffInicio>30)return{txt:'Próxima',cls:'badge-blue',icon:'🔵'};
+    return{txt:'Confirmada',cls:'badge-green',icon:'✅'};
+}
+
 function renderMisClases(){
     const sm=$('statMisClases');if(sm)sm.textContent=MIS_RESERVAS.length;
     const l=$('listaMisClases');
     if(!MIS_RESERVAS.length){
-        l.innerHTML='<div class="card" style="padding:2rem;text-align:center;"><div style="font-size:2.5rem;margin-bottom:.75rem">📅</div><p style="font-weight:800;font-size:.85rem;color:#64748b">Sin clases reservadas</p><button onclick="navTo(String.fromCharCode(39)+\'clases\'+String.fromCharCode(39))" onclick="navTo(\'clases\')" style="margin-top:.75rem;padding:.6rem 1.2rem;background:#1e3a6e;color:white;border:none;border-radius:10px;font-size:.72rem;font-weight:800;text-transform:uppercase;cursor:pointer">Explorar Clases</button></div>';
+        l.innerHTML='<div class="card" style="padding:2rem;text-align:center;"><div style="font-size:2.5rem;margin-bottom:.75rem">📅</div><p style="font-weight:800;font-size:.85rem;color:#64748b">Sin clases reservadas</p><button onclick="navTo(\'clases\')" style="margin-top:.75rem;padding:.6rem 1.2rem;background:#1e3a6e;color:white;border:none;border-radius:10px;font-size:.72rem;font-weight:800;text-transform:uppercase;cursor:pointer">Explorar Clases</button></div>';
         return;
     }
-    const grupos={};
-    MIS_RESERVAS.forEach(r=>{
-        const k=r.claseNombre||'Clase';
-        if(!grupos[k])grupos[k]={nombre:k,area:r.area,reservas:[]};
-        grupos[k].reservas.push(r);
-    });
     let html='';
-    Object.values(grupos).forEach(g=>{
-        const conf=g.reservas.filter(r=>r.estado==='confirmada'||r.estado==='asistio').length;
-        const enCurso=g.reservas.filter(r=>r.estado==='en_curso').length;
-        const noAsistio=g.reservas.filter(r=>r.estado==='no_asistio').length;
-        const total=g.reservas.length;
-        const esFit=(g.area||'')==='fitness';
+    MIS_RESERVAS.forEach(r=>{
+        const esFit=(r.area||'')==='fitness';
         const color=esFit?'#c8382a':'#1e3a6e';
-        const pct=total>0?Math.round((conf/total)*100):0;
-        const preres=g.reservas.find(r=>r.estado==='pre-reserva'||r.estado==='pendiente');
-        const cancelBtn=preres?('<button onclick="cancelarReserva(\''+preres.rid+'\',' + '\''+preres.claseId+'\')" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;text-transform:uppercase;padding:0;margin-top:.4rem"><i class="fa-solid fa-trash-can" style="margin-right:3px"></i>Cancelar pre-reserva</button>'):'';
-        const badgeCls=enCurso>0?'badge-amber':noAsistio>0?'badge-red':conf===total&&total>0?'badge-green':'badge-amber';
-        const badgeTxt=enCurso>0?'🟡 Clase en curso':noAsistio>0?('❌ '+noAsistio+' no asistió'):conf===total&&total>0?'✅ Confirmadas':('⏳ '+conf+' / '+total);
+        const icono=r.icon||(esFit?'🏃':'🤸');
+        const rt=estadoClaseRT(r);
+        const badgeTxt=rt?rt.icon+' '+rt.txt:'';
+        const badgeCls=rt?rt.cls:'';
+        const extra=rt?.extra?'<p style="font-size:.6rem;color:#94a3b8;margin-top:.3rem;font-style:italic">'+rt.extra+'</p>':'';
+        const preres=r.estado==='pre-reserva'||r.estado==='pendiente_pago';
+        const cancelBtn=preres?('<button onclick="cancelarReserva(\''+r.rid+'\',' + '\''+r.claseId+'\')" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;text-transform:uppercase;padding:0;margin-top:.4rem"><i class="fa-solid fa-trash-can" style="margin-right:3px"></i>Cancelar pre-reserva</button>'):'';
+        const clasesInfo=(typeof r.clasesRestantes==='number'&&r.clasesPaquete)?
+            '<p style="font-size:.6rem;font-weight:700;color:#64748b">'+r.clasesRestantes+'/'+r.clasesPaquete+' clases restantes</p>':'';
+        const horarioInfo=(r.dia&&r.hora)?('<p style="font-size:.65rem;font-weight:700;color:#64748b;margin-top:2px">'+r.dia+' '+r.hora+(r.horaFin?' – '+r.horaFin:'')+(r.profesor?' · 👤 '+r.profesor:'')+'</p>'):'';
         html+='<div class="card" style="padding:1rem;margin-bottom:.6rem">'
-            +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">'
+            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">'
             +'<div style="display:flex;align-items:center;gap:.6rem">'
-            +'<div style="width:36px;height:36px;border-radius:10px;background:'+(esFit?'#fff2f1':'#eef3ff')+';display:flex;align-items:center;justify-content:center;font-size:1.2rem">'+(esFit?'🏃':'🤸')+'</div>'
-            +'<div><p style="font-weight:900;font-size:.85rem;text-transform:uppercase">'+g.nombre+'</p>'
-            +'<p style="font-size:.6rem;font-weight:700;color:#64748b">'+(g.area||'').toUpperCase()+'</p></div></div>'
-            +'<div style="text-align:right">'
-            +'<p style="font-size:1.1rem;font-weight:900;color:'+color+'">'+conf+'<span style="font-size:.7rem;color:#64748b;font-weight:700"> / '+total+'</span></p>'
-            +'<p style="font-size:.55rem;font-weight:700;color:#64748b;text-transform:uppercase">confirmadas / inscritas</p></div></div>'
-            +'<div style="height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:.4rem">'
-            +'<div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:99px;transition:width .4s ease"></div></div>'
-            +'<div style="display:flex;justify-content:space-between;align-items:center">'
-            +'<span style="font-size:.58rem;font-weight:700;color:#64748b">'+total+' inscripci'+(total===1?'ón':'ones')+' este mes</span>'
-            +'<span class="badge '+badgeCls+'">'+badgeTxt+'</span></div>'
+            +'<div style="width:40px;height:40px;border-radius:10px;background:'+(esFit?'#fff2f1':'#eef3ff')+';display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">'+icono+'</div>'
+            +'<div><p style="font-weight:900;font-size:.85rem;text-transform:uppercase">'+(r.claseNombre||r.disciplina||'Clase')+'</p>'
+            +horarioInfo
+            +clasesInfo+'</div></div>'
+            +(badgeTxt?'<span class="badge '+badgeCls+'" style="white-space:nowrap;font-size:.6rem">'+badgeTxt+'</span>':'')
+            +'</div>'
+            +extra
             +cancelBtn
             +'</div>';
     });
     l.innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════════
+// NOTIFICACIONES AUTOMÁTICAS DE CLASES
+// ════════════════════════════════════════════════════════════════
+let _notifCache={};
+function checkClaseActual(){
+    const ahora=ahoraMX();
+    const hoyDia=diaSemana(ahora);
+    const ahoraMin=ahora.getHours()*60+ahora.getMinutes();
+    MIS_RESERVAS.filter(r=>r.estado==='confirmada').forEach(r=>{
+        if(!r.dia||!r.hora)return;
+        if(hoyDia.toLowerCase().trim()!==String(r.dia||'').toLowerCase().trim())return;
+        const[hh,mm]=(r.hora||'00:00').split(':').map(Number);
+        const inicioMin=hh*60+mm;
+        const diffInicio=inicioMin-ahoraMin;
+        const nombre=r.claseNombre||r.disciplina||'clase';
+        const key30=r.rid+'_30';
+        const keyNow=r.rid+'_now';
+        if(diffInicio>=25&&diffInicio<=30&&!_notifCache[key30]){
+            _notifCache[key30]=true;
+            toast('🔔 Tu clase de '+nombre+' empieza en ~30 min',5000);
+        }
+        if(diffInicio>=-2&&diffInicio<=2&&!_notifCache[keyNow]){
+            _notifCache[keyNow]=true;
+            toast('⏰ ¡Tu clase de '+nombre+' empieza ahora!',5000);
+        }
+    });
 }
 
 async function cancelarReserva(rid,cid){
@@ -1276,10 +1485,40 @@ async function guardarPrimerPass(){
         USER.password=p1;USER.primerAcceso=false;
         localStorage.setItem('ib_session',JSON.stringify(USER));
         $( 'modalPass').classList.remove('on');
-        toast('🔐 Contraseña guardada. ¡Bienvenido!',4000);
+        toast('✅ ¡Contraseña creada exitosamente!',4000);
     }catch(e){errMsg.textContent='Error: '+e.message;errEl.classList.add('on');}
 }
 
 </script>
+
+<!-- MODAL HORARIOS -->
+<div id="modalHorarios" style="position:fixed;inset:0;z-index:110;background:rgba(10,16,30,.85);display:none;align-items:flex-end;justify-content:center;padding:0">
+  <div class="horarios-sheet" style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;padding:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.4rem;border-bottom:1px solid #e2e8f0;flex-shrink:0">
+      <p style="font-weight:900;font-size:1rem;color:#1a2540">🗓️ Selecciona tu horario</p>
+      <button onclick="cerrarModalHorarios()" style="background:#f1f5f9;border:none;border-radius:8px;padding:.35rem .7rem;font-size:.85rem;cursor:pointer;font-weight:700;color:#64748b">✕</button>
+    </div>
+    <div id="horariosList" style="overflow-y:auto;flex:1;padding:1.2rem 1.4rem"></div>
+    <div style="padding:1rem 1.4rem;border-top:1px solid #e2e8f0;flex-shrink:0">
+      <button onclick="confirmarHorarios()" style="width:100%;padding:.9rem;background:#1e3a6e;color:white;border:none;border-radius:12px;font-family:'Outfit';font-weight:900;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#264971'" onmouseout="this.style.background='#1e3a6e'">
+        <i class="fa-solid fa-cart-plus" style="margin-right:8px"></i>Confirmar y agregar al carrito
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BARRA SUPERIOR MÓVIL -->
+<div id="mobileTopBar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:60;background:#0c1828;padding:.7rem 1rem;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.3)">
+  <button onclick="toggleSidebar()" style="background:rgba(255,255,255,.08);border:none;border-radius:8px;padding:.45rem .65rem;color:white;font-size:1rem;cursor:pointer">☰</button>
+  <span style="color:white;font-weight:900;font-size:.9rem;letter-spacing:.06em">IBIME</span>
+  <button onclick="abrirCarrito()" style="background:rgba(255,255,255,.08);border:none;border-radius:8px;padding:.45rem .65rem;color:white;font-size:1rem;cursor:pointer;position:relative">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span id="mobileCartBadge" style="position:absolute;top:2px;right:2px;background:#c8382a;color:white;border-radius:50%;width:14px;height:14px;font-size:.45rem;font-weight:900;display:none;align-items:center;justify-content:center"></span>
+  </button>
+</div>
+
+<!-- OVERLAY SIDEBAR MÓVIL -->
+<div id="sidebarOverlay" onclick="toggleSidebar()" style="display:none;position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.5)"></div>
+
 </body>
 </html>
