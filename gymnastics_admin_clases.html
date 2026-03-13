@@ -195,6 +195,23 @@ select,input{font-family:'DM Sans',sans-serif}
 .move-form label{font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:.15rem}
 .btn-confirmar-mover{width:100%;padding:.4rem;border-radius:6px;border:none;cursor:pointer;font-weight:700;font-size:.62rem;background:var(--accent2);color:white;transition:all .2s}
 .btn-cancelar-mover{width:100%;padding:.38rem;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-weight:700;font-size:.62rem;background:none;color:var(--muted);transition:all .2s;margin-top:.25rem}
+
+/* ── DRAG & DROP ── */
+.drag-over{background:rgba(255,255,255,.08)!important;outline:2px dashed var(--accent2)!important}
+.clase-chip[draggable]{cursor:grab}
+.clase-chip.dragging{opacity:.4}
+
+/* ── EDICIÓN INLINE POR CLASE ── */
+.clase-edit-field{display:grid;grid-template-columns:1fr 1fr;gap:.25rem;margin-top:.25rem}
+.clase-edit-field label{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:2px}
+.clase-edit-field input{width:100%;background:rgba(255,255,255,.04);border:none;border-bottom:1px dashed rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:.62rem;padding:2px 3px;outline:none;font-family:'DM Sans',sans-serif;border-radius:0}
+.clase-edit-field input:focus{border-bottom-color:var(--accent2);color:white}
+.clase-cupo-row{display:flex;align-items:center;justify-content:space-between;margin-top:.25rem}
+.clase-cupo-row label{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.clase-cupo-ctrl{display:flex;align-items:center;gap:.3rem}
+.clase-cupo-ctrl button{width:18px;height:18px;border-radius:5px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--txt);cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.clase-cupo-ctrl button:hover{border-color:var(--accent2);color:var(--accent2)}
+.clase-cupo-ctrl .cupo-num{font-family:'Bebas Neue';font-size:1.05rem;min-width:22px;text-align:center}
 </style>
 </head>
 <body>
@@ -302,12 +319,15 @@ select,input{font-family:'DM Sans',sans-serif}
 <div id="view-publicar" class="view">
   <div class="horario-header">
     <div class="horario-titulo" style="font-size:1.6rem">Publicar en <span style="color:var(--accent2)">Firebase</span></div>
-    <div style="display:flex;gap:.8rem;align-items:center">
-      <span style="font-size:.7rem;color:var(--muted)">Cupo predeterminado:</span>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <span style="font-size:.7rem;color:var(--muted)">Cupo:</span>
       <select id="cupoPredeterminado" style="background:var(--surface);border:1px solid var(--border);color:white;padding:.4rem .6rem;border-radius:6px;font-size:.7rem;font-weight:700" onchange="renderPubGrid()">
         <option value="10">10</option><option value="15">15</option>
         <option value="20" selected>20</option><option value="25">25</option><option value="30">30</option>
       </select>
+      <button onclick="publicarSeleccionadas()" class="btn btn-ghost"><i class="fa-solid fa-check-double"></i> Publicar Seleccionadas</button>
+      <button onclick="eliminarSeleccionadas()" class="btn-danger-sm"><i class="fa-solid fa-trash-can"></i> Eliminar Seleccionadas</button>
+      <button onclick="eliminarTodoFirebase()" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar TODO</button>
       <button onclick="publicarTodo()" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Publicar TODO</button>
     </div>
   </div>
@@ -320,6 +340,7 @@ select,input{font-family:'DM Sans',sans-serif}
     <div class="horario-titulo" style="font-size:1.6rem">Carga <span style="color:var(--accent2)">Masiva</span></div>
     <div style="display:flex;gap:.8rem">
       <button onclick="importarTodas()" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Importar Todas</button>
+      <button onclick="actualizarEnFirebase()" class="btn btn-ghost"><i class="fa-solid fa-rotate"></i> Actualizar en Firebase</button>
       <button onclick="limpiarFirebase()" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Limpiar Firebase</button>
     </div>
   </div>
@@ -344,9 +365,11 @@ select,input{font-family:'DM Sans',sans-serif}
   <div class="horario-header">
     <div class="horario-titulo" style="font-size:1.6rem">Vista <span style="color:#34d399">Alumno</span></div>
     <div style="display:flex;gap:.8rem;align-items:center">
-      <div style="display:flex;gap:.4rem">
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
         <button onclick="renderVistaAlumno('fitness')" id="btnVaFit" class="btn btn-orange">🏃 Fitness</button>
         <button onclick="renderVistaAlumno('gimnasia')" id="btnVaGym" class="btn btn-indigo" style="opacity:.5">🤸 Gimnasia</button>
+        <button onclick="publicarArea('fitness')" class="btn btn-orange" style="opacity:.85;font-size:.62rem"><i class="fa-solid fa-rocket"></i> Pub Fitness</button>
+        <button onclick="publicarArea('gimnasia')" class="btn btn-indigo" style="opacity:.85;font-size:.62rem"><i class="fa-solid fa-rocket"></i> Pub Gimnasia</button>
       </div>
       <span style="font-size:.65rem;color:var(--muted);font-weight:600">Así ve el alumno las disciplinas y horarios disponibles</span>
     </div>
@@ -436,6 +459,10 @@ let HORARIO_GIMNASIA = JSON.parse(JSON.stringify(HORARIO_GIMNASIA_BASE));
 const cuposLocales={};
 function getCupo(hora,dia){return cuposLocales[hora+'|'+dia]||20;}
 function setCupo(hora,dia,val){cuposLocales[hora+'|'+dia]=val;}
+
+// costos y cupos individuales por clase (clave: fbKey)
+const preciosClase={};  // key → { precio, precioPronto }
+const cuposClase={};    // key → number
 
 // Profesores locales (antes de publicar): "nombre|hora|dia" → string
 const profesoresLocal={};
@@ -555,11 +582,15 @@ function renderGrid(horario,contenedorId,area){
       const isActiva=celdaActiva&&celdaActiva.hora===franja.hora&&celdaActiva.dia===dia&&celdaActiva.area===area;
       html+=`<div class="gh-cell ${enFB?'celda-fb':''}">
         <div class="clases-celda ${isActiva?(area==='fitness'?'editando-fit':'editando'):''}"
-             onclick="abrirCelda('${franja.hora}','${dia}','${area}',${fi})" title="${franja.hora} · ${dia}">
+             onclick="abrirCelda('${franja.hora}','${dia}','${area}',${fi})" title="${franja.hora} · ${dia}"
+             ondragover="cellDragOver(event,this)"
+             ondragleave="cellDragLeave(this)"
+             ondrop="cellDrop(event,'${franja.hora}','${dia}','${area}',${fi})">
           ${clases.length===0?`<div class="chip-add">+ agregar</div>`:
             clases.map(c=>{
               const prof=getProf(c,franja.hora,dia);
-              return`<div class="clase-chip ${getChipClass(c)}">${getIcono(c)} ${c}${prof?`<span class="chip-prof">👤 ${prof}</span>`:''}</div>`;
+              const cSafe=c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+              return`<div class="clase-chip ${getChipClass(c)}" draggable="true" ondragstart="chipDragStart(event,'${cSafe}','${franja.hora}','${dia}','${area}',${fi})" ondragend="chipDragEnd(event)">${getIcono(c)} ${c}${prof?`<span class="chip-prof">👤 ${prof}</span>`:''}</div>`;
             }).join('')}
         </div>
       </div>`;
@@ -610,6 +641,10 @@ function renderEditPanel(hora,dia,area,franjaIdx){
       const sn=c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const kSafe=k.replace(/"/g,'&quot;');
       const profSafe=(prof||'').replace(/"/g,'&quot;');
+      const docData=enFB?fbDocsMap.get(k):null;
+      const currentPrecio=(preciosClase[k]?.precio!=null)?preciosClase[k].precio:(docData?.precio??(area==='fitness'?COSTOS_FITNESS[1]:COSTOS_GIMNASIA[1]));
+      const currentPP=(preciosClase[k]?.precioPronto!=null)?preciosClase[k].precioPronto:(docData?.precioPronto??(area==='fitness'?COSTOS_FITNESS_PRONTO[1]:COSTOS_GIMNASIA_PRONTO[1]));
+      const currentCupo=cuposClase[k]!=null?cuposClase[k]:(docData?.cupo??getCupo(hora,dia));
       return`<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:7px;padding:.4rem .5rem;margin-bottom:.35rem">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:.3rem">
           <div class="edit-chip ${getChipClass(c)}" style="cursor:default;flex:1;min-width:0;overflow:hidden">
@@ -626,6 +661,32 @@ function renderEditPanel(hora,dia,area,franjaIdx){
             value="${profSafe}"
             placeholder="👤 Nombre del profesor..."
             onblur="onProfBlur(this)">
+        </div>
+        <div class="clase-edit-field">
+          <div>
+            <label>Precio</label>
+            <input type="number" step="0.01" min="0"
+              data-clave="${kSafe}" data-field="precio" data-enfb="${enFB?'1':'0'}"
+              value="${currentPrecio}"
+              placeholder="Precio..."
+              onblur="onCostoClaseBlur(this)">
+          </div>
+          <div>
+            <label>Pronto Pago</label>
+            <input type="number" step="0.01" min="0"
+              data-clave="${kSafe}" data-field="precioPronto" data-enfb="${enFB?'1':'0'}"
+              value="${currentPP}"
+              placeholder="Pronto pago..."
+              onblur="onCostoClaseBlur(this)">
+          </div>
+        </div>
+        <div class="clase-cupo-row">
+          <label>Cupo individual</label>
+          <div class="clase-cupo-ctrl">
+            <button data-key="${kSafe}" data-enfb="${enFB?'1':'0'}" onclick="cambiarCupoClase(this,-1)">−</button>
+            <span class="cupo-num">${currentCupo}</span>
+            <button data-key="${kSafe}" data-enfb="${enFB?'1':'0'}" onclick="cambiarCupoClase(this,1)">+</button>
+          </div>
         </div>
         <div id="moveForm_${area}_${i}" style="display:none"></div>
       </div>`;
@@ -694,6 +755,105 @@ async function actualizarProfesorFirebase(key,profesor){
   try{
     await db.collection('catalogo').doc(docData.id).update({profesor});
   }catch(e){console.warn('Error actualizando profesor:',e);}
+}
+
+// ── EDICIÓN INLINE DE COSTOS POR CLASE ───────────────────────────
+function onCostoClaseBlur(el){
+  const k=el.dataset.clave;
+  const field=el.dataset.field;
+  const val=parseFloat(el.value)||0;
+  if(!preciosClase[k])preciosClase[k]={};
+  preciosClase[k][field]=val;
+  if(el.dataset.enfb==='1'&&fbDocsMap.has(k)){
+    const update={};update[field]=val;
+    db.collection('catalogo').doc(fbDocsMap.get(k).id).update(update).catch(e=>console.warn(e));
+  }
+}
+
+function cambiarCupoClase(btn,delta){
+  const k=btn.dataset.key;
+  const ctrl=btn.closest('.clase-cupo-ctrl');
+  const span=ctrl&&ctrl.querySelector('.cupo-num');
+  if(!span)return;
+  const cur=parseInt(span.textContent)||1;
+  const nuevo=Math.max(1,Math.min(200,cur+delta));
+  span.textContent=nuevo;
+  cuposClase[k]=nuevo;
+  if(btn.dataset.enfb==='1'&&fbDocsMap.has(k)){
+    db.collection('catalogo').doc(fbDocsMap.get(k).id)
+      .update({cupo:nuevo,cupoDisponible:nuevo}).catch(e=>console.warn(e));
+  }
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────
+let dragSource=null;
+
+function chipDragStart(event,nombre,hora,dia,area,fi){
+  dragSource={nombre,hora,dia,area,fi};
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain',nombre);
+  event.currentTarget.classList.add('dragging');
+}
+
+function chipDragEnd(event){
+  event.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+}
+
+function cellDragOver(event,cell){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  cell.classList.add('drag-over');
+}
+
+function cellDragLeave(cell){
+  cell.classList.remove('drag-over');
+}
+
+async function cellDrop(event,hora,dia,area,fi){
+  event.preventDefault();
+  const cell=event.currentTarget;
+  cell.classList.remove('drag-over');
+  if(!dragSource)return;
+  const{nombre,hora:oldHora,dia:oldDia,area:oldArea,fi:oldFi}=dragSource;
+  dragSource=null;
+  if(oldHora===hora&&oldDia===dia&&oldArea===area)return;
+
+  const srcHorario=oldArea==='fitness'?HORARIO_FITNESS:HORARIO_GIMNASIA;
+  const idx=srcHorario[oldFi]?.dias[oldDia]?.indexOf(nombre)??-1;
+  if(idx===-1)return;
+  srcHorario[oldFi].dias[oldDia].splice(idx,1);
+
+  const dstHorario=area==='fitness'?HORARIO_FITNESS:HORARIO_GIMNASIA;
+  let dstFi=fi;
+  if(!dstHorario[dstFi]){dstHorario.push({hora,dias:{}});dstFi=dstHorario.length-1;}
+  if(!dstHorario[dstFi].dias[dia])dstHorario[dstFi].dias[dia]=[];
+  if(!dstHorario[dstFi].dias[dia].includes(nombre))dstHorario[dstFi].dias[dia].push(nombre);
+
+  const oldK=fbKey(nombre,oldHora,oldDia);
+  if(fbDocsMap.has(oldK)){
+    const docData=fbDocsMap.get(oldK);
+    const[newInicio,newFin]=hora.split('-');
+    try{
+      await db.collection('catalogo').doc(docData.id).update({dia,inicio:newInicio,fin:newFin,diasSemana:[dia]});
+      toast('✅ "'+nombre+'" movida a '+dia+' '+hora);
+    }catch(e){toast('❌ '+e.message);}
+  }else{
+    toast('✅ "'+nombre+'" movida localmente a '+dia+' '+hora);
+  }
+  const newK=fbKey(nombre,hora,dia);
+  if(profesoresLocal[oldK]){profesoresLocal[newK]=profesoresLocal[oldK];delete profesoresLocal[oldK];}
+  if(preciosClase[oldK]){preciosClase[newK]=preciosClase[oldK];delete preciosClase[oldK];}
+  if(cuposClase[oldK]!=null){cuposClase[newK]=cuposClase[oldK];delete cuposClase[oldK];}
+
+  if(oldArea!==area){
+    renderGrid(oldArea==='fitness'?HORARIO_FITNESS:HORARIO_GIMNASIA,
+               oldArea==='fitness'?'gridFitness':'gridGimnasia',oldArea);
+  }
+  renderGrid(dstHorario,area==='fitness'?'gridFitness':'gridGimnasia',area);
+  if(celdaActiva){
+    renderEditPanel(celdaActiva.hora,celdaActiva.dia,celdaActiva.area,celdaActiva.franjaIdx);
+  }
 }
 
 // ── MOVER CLASE ───────────────────────────────────────────────────
@@ -936,10 +1096,13 @@ function renderPubGrid(){
     const prof=enFB?(fbDocsMap.get(k)?.profesor||''):(profesoresLocal[k]||'');
     return`<div class="pub-card ${enFB?'en-fb':''}">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:.5rem">
-        <div>
-          <div class="pub-nombre">${getIcono(c.nombre)} ${c.nombre}</div>
-          <div style="font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:3px;display:inline-block;background:${area==='fitness'?'rgba(249,115,22,.15)':'rgba(99,102,241,.15)'};color:${area==='fitness'?'var(--fitness)':'var(--gimnasia)'}">${area}</div>
-          ${prof?`<div style="font-size:.55rem;color:var(--muted);margin-top:3px">👤 ${prof}</div>`:''}
+        <div style="display:flex;align-items:start;gap:.5rem">
+          <input type="checkbox" class="pub-select" id="pub-check-${i}" style="margin-top:.15rem;cursor:pointer;accent-color:var(--accent2);width:14px;height:14px">
+          <div>
+            <div class="pub-nombre">${getIcono(c.nombre)} ${c.nombre}</div>
+            <div style="font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:3px;display:inline-block;background:${area==='fitness'?'rgba(249,115,22,.15)':'rgba(99,102,241,.15)'};color:${area==='fitness'?'var(--fitness)':'var(--gimnasia)'}">${area}</div>
+            ${prof?`<div style="font-size:.55rem;color:var(--muted);margin-top:3px">👤 ${prof}</div>`:''}
+          </div>
         </div>
         ${enFB?'<span style="color:var(--accent2);font-size:.62rem;font-weight:700">✅ En Firebase</span>':''}
       </div>
@@ -1023,37 +1186,44 @@ async function importarTodas(){
   const cupo=20;
   document.getElementById('importProgress').style.display='block';
   const log=document.getElementById('importLog');
-  let ok=0,err=0,pen=clasesPlanas.length;
+  let ok=0,upd=0,err=0,pen=clasesPlanas.length;
   document.getElementById('logPen').innerText=pen;
   log.innerHTML='';
   for(const c of clasesPlanas){
     const costos=c.area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
     const pronto=c.area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
     const k=fbKey(c.nombre,c.hora,c.dia);
-    const profesor=profesoresLocal[k]||'';
+    const profesor=profesoresLocal[k]||fbDocsMap.get(k)?.profesor||'';
     const row=document.createElement('div');
     row.className='prog-item';
     row.innerHTML=`<span>${getIcono(c.nombre)} ${c.nombre} · ${c.dia} ${c.inicio}-${c.fin}</span><span class="prog-pen">⏳</span>`;
     log.appendChild(row);
+    const payload={
+      nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
+      dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
+      precio:costos[1],precioPronto:pronto[1],
+      icon:c.icono,profesor,activa:true,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    };
     try{
-      await db.collection('catalogo').add({
-        nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
-        dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
-        precio:costos[1],precioPronto:pronto[1],
-        icon:c.icono,profesor,activa:true,
-        timestamp:firebase.firestore.FieldValue.serverTimestamp()
-      });
-      row.querySelector('span:last-child').innerHTML='<span class="prog-ok">✅</span>';ok++;
+      if(clasesEnFirebase.has(k)){
+        const docRef=fbDocsMap.get(k);
+        if(docRef?.id)await db.collection('catalogo').doc(docRef.id).update(payload);
+        row.querySelector('span:last-child').innerHTML='<span class="prog-ok">🔄</span>';upd++;
+      }else{
+        await db.collection('catalogo').add(payload);
+        row.querySelector('span:last-child').innerHTML='<span class="prog-ok">✅</span>';ok++;
+      }
     }catch(e){
       row.querySelector('span:last-child').innerHTML='<span class="prog-err">❌</span>';err++;
     }
     pen--;
-    document.getElementById('logOk').innerText=ok;
+    document.getElementById('logOk').innerText=ok+upd;
     document.getElementById('logErr').innerText=err;
     document.getElementById('logPen').innerText=pen;
     log.scrollTop=log.scrollHeight;
   }
-  toast('🎉 Importación completa: '+ok+' clases',6000);
+  toast('🎉 '+ok+' nuevas · 🔄 '+upd+' actualizadas · ❌ '+err+' errores',6000);
 }
 
 async function limpiarFirebase(){
@@ -1114,6 +1284,111 @@ renderGrid(HORARIO_FITNESS,'gridFitness','fitness');
 renderGrid(HORARIO_GIMNASIA,'gridGimnasia','gimnasia');
 recalcPlanas();
 cargarCostos();
+
+// ── PUBLICAR / ELIMINAR SELECCIONADAS ────────────────────────────
+async function publicarSeleccionadas(){
+  const checks=[...document.querySelectorAll('.pub-select:checked')];
+  if(!checks.length){toast('⚠️ Selecciona al menos una clase');return;}
+  const cupo=parseInt(document.getElementById('cupoPredeterminado').value||20);
+  let ok=0,upd=0,err=0;
+  for(const cb of checks){
+    const i=parseInt(cb.id.replace('pub-check-',''));
+    const c=clasesPlanas[i];if(!c)continue;
+    const k=fbKey(c.nombre,c.hora,c.dia);
+    const costos=c.area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
+    const pronto=c.area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
+    const profesor=profesoresLocal[k]||fbDocsMap.get(k)?.profesor||'';
+    const payload={
+      nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
+      dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
+      precio:costos[1],precioPronto:pronto[1],
+      icon:c.icono,profesor,activa:true,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    };
+    try{
+      if(clasesEnFirebase.has(k)){
+        const docRef=fbDocsMap.get(k);
+        if(docRef?.id)await db.collection('catalogo').doc(docRef.id).update(payload);
+        upd++;
+      }else{
+        await db.collection('catalogo').add(payload);ok++;
+      }
+    }catch(e){err++;}
+  }
+  toast('✅ '+ok+' publicadas · 🔄 '+upd+' actualizadas · ❌ '+err+' errores',5000);
+}
+
+async function eliminarSeleccionadas(){
+  const checks=[...document.querySelectorAll('.pub-select:checked')];
+  const enFB=checks.filter(cb=>{
+    const i=parseInt(cb.id.replace('pub-check-',''));
+    const c=clasesPlanas[i];
+    return c&&clasesEnFirebase.has(fbKey(c.nombre,c.hora,c.dia));
+  });
+  if(!enFB.length){toast('⚠️ Ninguna clase seleccionada está en Firebase');return;}
+  if(!confirm('¿Eliminar '+enFB.length+' clase(s) seleccionadas de Firebase?'))return;
+  const batch=db.batch();
+  for(const cb of enFB){
+    const i=parseInt(cb.id.replace('pub-check-',''));
+    const c=clasesPlanas[i];
+    const k=fbKey(c.nombre,c.hora,c.dia);
+    const docData=fbDocsMap.get(k);
+    if(docData)batch.delete(db.collection('catalogo').doc(docData.id));
+  }
+  await batch.commit();
+  toast('🗑️ '+enFB.length+' clases eliminadas de Firebase');
+}
+
+async function eliminarTodoFirebase(){
+  if(!confirm('⚠️ ¿Eliminar TODAS las clases del catálogo? Esta acción no se puede deshacer.'))return;
+  const snap=await db.collection('catalogo').where('tipo','==','clase').get();
+  const batch=db.batch();
+  snap.docs.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+  HORARIO_FITNESS=JSON.parse(JSON.stringify(HORARIO_FITNESS_BASE));
+  HORARIO_GIMNASIA=JSON.parse(JSON.stringify(HORARIO_GIMNASIA_BASE));
+  firebaseInited=false;
+  toast('🗑️ '+snap.size+' clases eliminadas');
+}
+
+// ── ACTUALIZAR MASIVO EN FIREBASE ─────────────────────────────────
+async function actualizarEnFirebase(){
+  if(!clasesEnFirebase.size){toast('⚠️ No hay clases en Firebase para actualizar');return;}
+  if(!confirm('¿Actualizar '+clasesEnFirebase.size+' clases en Firebase con los datos actuales?'))return;
+  document.getElementById('importProgress').style.display='block';
+  const log=document.getElementById('importLog');
+  let ok=0,err=0,pen=fbDocsMap.size;
+  document.getElementById('logPen').innerText=pen;
+  log.innerHTML='';
+  for(const[k,docData]of fbDocsMap){
+    const row=document.createElement('div');
+    row.className='prog-item';
+    row.innerHTML=`<span>${getIcono(docData.nombre)} ${docData.nombre} · ${docData.dia} ${docData.inicio}-${docData.fin}</span><span class="prog-pen">⏳</span>`;
+    log.appendChild(row);
+    const area=docData.area;
+    const costos=area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
+    const pronto=area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
+    const profesor=profesoresLocal[k]||docData.profesor||'';
+    const cupo=cuposClase[k]??docData.cupo??getCupo(docData.inicio+'-'+docData.fin,docData.dia);
+    const precio=(preciosClase[k]?.precio!=null)?preciosClase[k].precio:(docData.precio??costos[1]);
+    const precioPronto=(preciosClase[k]?.precioPronto!=null)?preciosClase[k].precioPronto:(docData.precioPronto??pronto[1]);
+    try{
+      await db.collection('catalogo').doc(docData.id).update({
+        profesor,cupo,cupoDisponible:cupo,precio,precioPronto,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      row.querySelector('span:last-child').innerHTML='<span class="prog-ok">✅</span>';ok++;
+    }catch(e){
+      row.querySelector('span:last-child').innerHTML='<span class="prog-err">❌</span>';err++;
+    }
+    pen--;
+    document.getElementById('logOk').innerText=ok;
+    document.getElementById('logErr').innerText=err;
+    document.getElementById('logPen').innerText=pen;
+    log.scrollTop=log.scrollHeight;
+  }
+  toast('🎉 Actualización completa: '+ok+' clases',6000);
+}
 
 // ── VISTA ALUMNO ─────────────────────────────────────────────────
 let _vaArea='fitness';
