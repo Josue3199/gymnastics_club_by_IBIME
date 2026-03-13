@@ -158,6 +158,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
   .grid-ingreso-sub{grid-template-columns:1fr}
   .stat-val{font-size:1.4rem}
   .page-title{font-size:1.2rem}
+  input, select, textarea { font-size: 16px !important; }
+  .btn { min-height: 44px; touch-action: manipulation; }
+  body { overflow-x: hidden; }
+  #main { max-width: 100vw; overflow-x: hidden; }
+  #credPreview { max-width: 100%; }
+  .grid-3-col-stats { grid-template-columns: 1fr 1fr; }
 }
 
 </style>
@@ -182,7 +188,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
     <button class="sb-item"         onclick="showView('catalogo',this)"><i class="fa-solid fa-tags"></i>Catálogo</button>
     <button class="sb-item"         onclick="showView('alumnos',this)"><i class="fa-solid fa-users"></i>Alumnos</button>
     <button class="sb-item"         onclick="showView('clases',this)"><i class="fa-solid fa-layer-group"></i>Gestión Clases</button>
-    <button class="sb-item"         onclick="showView('ingresos',this)"><i class="fa-solid fa-chart-bar"></i>Ingresos x Día</button>
+    <button class="sb-item" id="sbIngresos" onclick="abrirIngresos()" style="opacity:0.4;cursor:not-allowed;filter:grayscale(1)"><i class="fa-solid fa-lock"></i>🔒 Ingresos x Día</button>
+    <button class="sb-item" onclick="showView('horario',this)"><i class="fa-solid fa-calendar-day"></i>Horario</button>
   </nav>
   <div class="sb-clock" id="reloj">00:00:00</div>
 </aside>
@@ -198,13 +205,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
     <div class="stat-card"><div class="accent" style="background:#10b981"></div><p class="stat-lbl">Activos</p><p id="dActivos" class="stat-val" style="color:#059669">0</p></div>
     <div class="stat-card"><div class="accent" style="background:#ef4444"></div><p class="stat-lbl">Vencidos</p><p id="dVencidos" class="stat-val" style="color:#dc2626">0</p></div>
     <div class="stat-card"><div class="accent" style="background:#f59e0b"></div><p class="stat-lbl">Órdenes hoy</p><p id="dOrdenes" class="stat-val" style="color:#d97706">0</p></div>
-    <div class="stat-card" onclick="showView('ingresos',document.querySelector('.sb-item[onclick*=ingresos]'))" style="cursor:pointer" title="Ver detalle"><div class="accent" style="background:var(--azul)"></div><p class="stat-lbl">💰 Ingreso hoy <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.5"></i></p><p id="dIngreso" class="stat-val" style="color:var(--azul)">$0</p><p id="dIngresoSub" style="font-size:.58rem;color:var(--txt2);font-weight:600;margin-top:.2rem"></p></div>
+    <div class="stat-card" onclick="abrirIngresos()" style="cursor:pointer;opacity:0.7;filter:grayscale(0.5)" title="Ver detalle (requiere contraseña)"><div class="accent" style="background:var(--azul)"></div><p class="stat-lbl">💰 Ingreso hoy <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.5"></i></p><p id="dIngreso" class="stat-val" style="color:var(--azul)">$0</p><p id="dIngresoSub" style="font-size:.58rem;color:var(--txt2);font-weight:600;margin-top:.2rem"></p></div>
   </div>
   <!-- Panel ingreso del día con desglose -->
   <div class="card" style="padding:1.2rem;margin-bottom:1rem;border-left:4px solid #10b981">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
       <p class="section-lbl" style="margin-bottom:0">💰 Cobros de hoy</p>
-      <button onclick="showView('ingresos',document.querySelector('[onclick*=ingresos]'))" class="btn btn-ghost" style="font-size:.6rem;padding:.3rem .7rem"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver historial</button>
+      <button onclick="abrirIngresos()" class="btn btn-ghost" style="font-size:.6rem;padding:.3rem .7rem"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver historial</button>
     </div>
     <div class="grid-3-col">
       <div style="background:#f0fdf4;border-radius:10px;padding:.7rem;text-align:center">
@@ -285,6 +292,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             <i class="fa-solid fa-star" style="color:var(--azul)"></i>
             <div><p style="font-size:.72rem;font-weight:800;color:var(--azul)">Inscripción: $800</p><p style="font-size:.6rem;color:var(--azul2);font-weight:600">Se carga automáticamente al carrito del alumno</p></div>
           </div>
+          <div style="margin-top:.5rem;display:flex;gap:.4rem;align-items:center">
+            <input id="rCupon" type="text" class="inp" placeholder="Cupón (opcional)" style="flex:1;font-size:.75rem" oninput="this.value=this.value.toUpperCase();verificarCupon()">
+            <span id="cuponEstado" style="font-size:.7rem;font-weight:800;white-space:nowrap"></span>
+          </div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:.8rem;margin-bottom:.8rem">
           <p class="section-lbl">¿Ya está registrado? Buscar por CURP</p>
@@ -328,8 +339,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             <div>
               <p style="font-size:.5rem;opacity:.5;text-transform:uppercase;letter-spacing:.1em">ID Matrícula</p>
               <p id="cpID"  style="font-weight:900;font-size:.8rem;font-family:monospace"></p>
-              <p style="font-size:.5rem;opacity:.5;text-transform:uppercase;letter-spacing:.1em;margin-top:.2rem">Contraseña inicial</p>
-              <p id="cpPIN" style="font-weight:900;font-size:1rem;letter-spacing:.2em"></p>
             </div>
             <div style="text-align:right">
               <p style="font-size:.5rem;opacity:.5;text-transform:uppercase;letter-spacing:.1em">Vence</p>
@@ -396,6 +405,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
           <button onclick="resetCaja()" class="btn btn-ghost" style="justify-content:center">Cancelar</button>
           <button onclick="registrarCobro()" id="btnCobrar" class="btn btn-azul" style="justify-content:center"><i class="fa-solid fa-check"></i>Confirmar Pago</button>
+        </div>
+        <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem">
+          <p class="section-lbl">Últimos pagos</p>
+          <div id="cajaPagosRecientes" style="display:flex;flex-direction:column;gap:.35rem;max-height:180px;overflow-y:auto">
+            <p style="font-size:.65rem;color:var(--txt2);text-align:center;padding:.5rem">Cargando...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -548,6 +563,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
               <div>
                 <p id="pNombre" style="font-weight:900;font-size:1rem;text-transform:uppercase"></p>
                 <p id="pSub" style="font-size:.65rem;color:var(--txt2);font-weight:600;margin-top:1px"></p>
+                <p id="pProfesor" style="font-size:.62rem;font-weight:700;color:var(--txt2);margin-top:1px"></p>
               </div>
             </div>
             <button onclick="cerrarPanel()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:.7rem"><i class="fa-solid fa-xmark"></i></button>
@@ -564,6 +580,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             <button onclick="switchPanel('inscritos')" id="pbtn-inscritos" class="pbtn on"><i class="fa-solid fa-users"></i> Alumnos</button>
             <button onclick="switchPanel('mover')" id="pbtn-mover" class="pbtn"><i class="fa-solid fa-right-left"></i> Mover</button>
             <button onclick="switchPanel('editar')" id="pbtn-editar" class="pbtn"><i class="fa-solid fa-pen"></i> Editar</button>
+            <button class="pbtn" id="pbtn-asistencia" onclick="showPanel('spanel-asistencia','pbtn-asistencia')"><i class="fa-solid fa-clipboard-check"></i> Asistencia</button>
           </div>
         </div>
 
@@ -618,6 +635,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             </div>
           </div>
         </div>
+<div id="spanel-asistencia" class="card" style="padding:1.2rem;display:none">
+  <p class="section-lbl" style="margin-bottom:.5rem">Pase de Asistencia</p>
+  <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+    <input type="date" id="asistFecha" class="inp" style="flex:1">
+    <button onclick="cargarAsistenciaClase()" class="btn btn-azul" style="font-size:.65rem"><i class="fa-solid fa-rotate"></i></button>
+  </div>
+  <div id="listaAsistencia" style="display:flex;flex-direction:column;gap:.4rem;max-height:300px;overflow-y:auto;margin-bottom:.75rem"></div>
+  <button onclick="guardarAsistencia()" class="btn btn-azul" style="width:100%;justify-content:center"><i class="fa-solid fa-floppy-disk"></i> Guardar Asistencia</button>
+</div>
       </div>
     </div>
 
@@ -739,6 +765,12 @@ function showView(id,btn){
     if(btn){btn.classList.add('on','rojo');}
     if(id==='alumnos')cargarAlumnos();
     if(id==='clases')renderGridDiscip();
+    if(id==='ingresos') {
+      const fi = $('filtroMesIngr');
+      if (fi && !fi.value) { const n = new Date(); fi.value = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); }
+      cargarIngresosHist();
+    }
+    if(id === 'horario') { setHorarioMañana(); }
 }
 
 // ── RELOJ ────────────────────────────────────────────────────────
@@ -858,20 +890,24 @@ async function registrarAlumno(){
         let num=1;
         await db.runTransaction(async tx=>{const ref=db.collection('config').doc('contador_alumnos');const s=await tx.get(ref);num=s.exists?(s.data().ultimo_numero||0)+1:1;tx.set(ref,{ultimo_numero:num},{merge:true});});
         const nuevoID='IBI-GYM'+String(num).padStart(6,'0');
-        const pin=String(Math.floor(1000+Math.random()*9000));
+        const pin='gymnastics2026';
         const hoy=new Date();const venc=new Date(hoy);venc.setDate(venc.getDate()+MEMBRESIA_DIAS);
         const vencStr=venc.toISOString().split('T')[0];
-        await db.collection('alumnos').doc(nuevoID).set({nombre,curp,nivel,pago:'800',pin,condicion:cond,matricula:mat,correo,celular,fechaRegistro:hoy.toLocaleDateString('es-MX'),vencimiento:vencStr,estatus:'INACTIVO',inscripcionPagada:false,primerAcceso:true,password:pin});
-        fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'NUEVO_USUARIO',id:nuevoID,nombre,curp,pin,nivel,monto:'800',fecha:hoy.toLocaleDateString('es-MX'),condicion:cond,matricula:mat,vencimiento:vencStr})}).catch(()=>{});
+        const montoInscripcion = cuponAplicado ? '0' : '800';
+        await db.collection('alumnos').doc(nuevoID).set({nombre,curp,nivel,pago:montoInscripcion,pin,condicion:cond,matricula:mat,correo,celular,fechaRegistro:hoy.toLocaleDateString('es-MX'),vencimiento:vencStr,estatus:'INACTIVO',inscripcionPagada:false,primerAcceso:true,password:pin});
+        fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'NUEVO_USUARIO',id:nuevoID,nombre,curp,pin,nivel,monto:montoInscripcion,fecha:hoy.toLocaleDateString('es-MX'),condicion:cond,matricula:mat,vencimiento:vencStr})}).catch(()=>{});
         mostrarCredencialReg(nuevoID,nombre,nivel,pin,vencStr);
+        cuponAplicado = false;
+        if ($('rCupon')) $('rCupon').value = '';
+        if ($('cuponEstado')) $('cuponEstado').textContent = '';
         toast('🎉 Alumno registrado: '+nuevoID,5000);
     }catch(e){toast('❌ Error: '+e.message,5000);}
     finally{btn.textContent='Inscribir Alumno';btn.disabled=false;}
 }
 function mostrarCredencialReg(id,nombre,nivel,pin,vence){
     $('credPlaceholder').style.display='none';$('credResultado').style.display='block';
-    $('cpNombre').textContent=nombre;$('cpNivel').textContent=nivel;$('cpID').textContent=id;$('cpPIN').textContent=pin;$('cpVence').textContent=vence;
-    const qr=$('credQR');qr.innerHTML='';new QRCode(qr,{text:id,width:110,height:110,colorDark:'#1e3a6e'});
+    $('cpNombre').textContent=nombre;$('cpNivel').textContent=nivel;$('cpID').textContent=id;$('cpVence').textContent=vence;
+    const qr=$('credQR');qr.innerHTML='';new QRCode(qr,{text:id+'|'+nombre,width:110,height:110,colorDark:'#1e3a6e'});
     window._credActual={id,nombre,pin,vence};
 }
 function nuevoRegistro(){
@@ -897,7 +933,7 @@ async function buscarPorCurp(){
     finally{btn.textContent='Buscar';btn.disabled=false;}
 }
 function descargarCredencial(){html2canvas($('credPreview'),{scale:3,useCORS:true}).then(c=>{const a=document.createElement('a');a.download='IBIME_'+window._credActual?.nombre+'.png';a.href=c.toDataURL();a.click();});}
-function enviarWhatsApp(){const c=window._credActual||{};const m=`*IBIME GYMNASTICS CLUB*\nBienvenido!\nID: *${c.id}*\nPIN: *${c.pin}*\nVence: ${c.vence}`;window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');}
+function enviarWhatsApp(){const c=window._credActual||{};const m=`*IBIME GYMNASTICS CLUB*\nBienvenido!\nID: *${c.id}*\nVence: ${c.vence}`;window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');}
 
 // ── CAJA ─────────────────────────────────────────────────────────
 let alumnoEnCaja=null;
@@ -921,6 +957,7 @@ async function buscarAlumnoCaja(id){
         if(!folio){await db.runTransaction(async tx=>{const ref=db.collection('config').doc('contador_pagos');const s=await tx.get(ref);numFolio=s.exists?(s.data().ultimo_numero||0)+1:1;tx.set(ref,{ultimo_numero:numFolio},{merge:true});});folio='IBY-PAG-'+String(numFolio).padStart(10,'0');}
         $('cajaFolio').textContent=folio;$('cajaMonto').value=monto||'';$('cajaDetalle').value=detalle||'';
         if(scannerActivo)toggleScannerCaja();
+        cargarPagosRecientes(idU);
     }catch(e){toast('❌ '+e.message);}
 }
 function resetCaja(){alumnoEnCaja=null;$('cajaSinAlumno').style.display='block';$('cajaConAlumno').style.display='none';$('cajaMonto').value='';$('cajaDetalle').value='';$('cajaRefTransf').value='';$('campoRefTransf').style.display='none';$('cajaMetodo').value='EFECTIVO';}
@@ -948,6 +985,9 @@ async function registrarCobro(){
         const pagoData={alumnoId:alumnoEnCaja.id,nombre:alumnoEnCaja.nombre,monto,detalle,folio,fecha:new Date(),fechaString:new Date().toLocaleDateString('es-MX'),metodo};
         if(referencia)pagoData.referencia=referencia;
         await db.collection('pagos').add(pagoData);
+        if (typeof rtdb !== 'undefined') {
+          try { rtdb.ref('notificaciones/' + alumnoEnCaja.id).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) {}
+        }
         const resSnap=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
         await Promise.all(resSnap.docs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
         fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'REGISTRAR_PAGO',id:alumnoEnCaja.id,nombre:alumnoEnCaja.nombre,idCarrito:folio,carrito:detalle,monto,metodo,fecha:new Date().toLocaleString('es-MX')})}).catch(()=>{});
@@ -1101,9 +1141,18 @@ function filtrarArea(area){
 }
 
 function switchVistaClases(v){} // Legacy - kept for compatibility
+function showPanel(panelId, btnId) {
+    ['inscritos','mover','editar','asistencia'].forEach(k=>{
+        const el = $('spanel-'+k); if(el) el.style.display='none';
+        const btn = $('pbtn-'+k); if(btn) btn.classList.remove('on');
+    });
+    const el = $(panelId); if(el) el.style.display='block';
+    const btn = $(btnId); if(btn) btn.classList.add('on');
+    if(panelId==='spanel-asistencia'){const t=$('asistFecha');if(t&&!t.value){const d=new Date();t.value=d.toISOString().split('T')[0];}cargarAsistenciaClase();}
+}
 function switchPanel(p){
-    ['inscritos','mover','editar'].forEach(k=>{
-        $('spanel-'+k).style.display=k===p?'block':'none';
+    ['inscritos','mover','editar','asistencia'].forEach(k=>{
+        const el=$('spanel-'+k);if(el)el.style.display=k===p?'block':'none';
         const btn=$('pbtn-'+k);if(btn)btn.classList.toggle('on',k===p);
     });
     if(p==='mover')renderMoverList();
@@ -1178,6 +1227,7 @@ async function verDiscip(claseId,nombre){
     $('pIcon').style.background=esFit?'#fff2f1':'#eef3ff';
     switchPanel('inscritos');
     $('pSub').textContent=(clase.area||'').toUpperCase()+' · '+(clase.diasSemana||[]).join(', ')+' · '+( clase.inicio||'--')+' – '+(clase.fin||'--');
+    if ($('pProfesor')) $('pProfesor').textContent = (clase.profesor ? '👤 ' + clase.profesor : '') + (clase.inicio ? ' · ⏰ ' + clase.inicio + ' – ' + clase.fin : '');
     // Barra ocupación — agrupar todos los horarios de esta disciplina
     const grHors=clasesCached.filter(x=>x.nombre===nombre);
     const totalC=grHors.reduce((s,h)=>s+(h.cupo||0),0);
@@ -1365,82 +1415,288 @@ async function eliminarClaseEdit(){
 }
 
 // ── INGRESOS HISTÓRICOS ───────────────────────────────────────────
-async function cargarIngresosHist(){
-    const mesInput=$('filtroMesIngr').value;
-    if(!mesInput){toast('⚠️ Selecciona un mes');return;}
-    const [anio,mes]=mesInput.split('-');
-    const inicio=new Date(parseInt(anio),parseInt(mes)-1,1);
-    const fin=new Date(parseInt(anio),parseInt(mes),1);
-    const tabla=$('tablaIngresos');
-    tabla.innerHTML='<p style="font-size:.75rem;color:var(--txt2);font-weight:600;padding:1rem;text-align:center">Cargando...</p>';
-    try{
-        const snap=await db.collection('pagos')
-            .where('fecha','>=',inicio)
-            .where('fecha','<',fin)
-            .orderBy('fecha','asc').get();
-        if(snap.empty){tabla.innerHTML='<p style="font-size:.75rem;color:var(--txt2);font-weight:600;padding:1rem;text-align:center">Sin cobros en este periodo</p>';return;}
-        // Agrupar por día
-        const dias={};
-        let totalMes=0;
-        snap.forEach(d=>{
-            const p=d.data();
-            const dia=p.fechaString||'Sin fecha';
-            if(!dias[dia])dias[dia]={cobros:[],total:0,efectivo:0,transf:0,tarjeta:0};
-            dias[dia].cobros.push(p);
-            dias[dia].total+=(p.monto||0);
-            totalMes+=(p.monto||0);
-            if(p.metodo==='EFECTIVO')dias[dia].efectivo+=(p.monto||0);
-            else if(p.metodo==='TRANSFERENCIA')dias[dia].transf+=(p.monto||0);
-            else if(p.metodo==='TARJETA')dias[dia].tarjeta+=(p.monto||0);
-        });
-        $('dIngresoMes').textContent='$'+totalMes.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-        $('dCobrosHoy').textContent=snap.size;
-        tabla.innerHTML=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0])).map(([dia,info])=>`
-            <div onclick="verDetalleDia('${dia}')" style="display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:.75rem;padding:.7rem 1rem;border-radius:10px;border:1px solid var(--border);background:white;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='white'">
-                <p style="font-weight:800;font-size:.8rem">${dia}</p>
-                <span style="font-size:.62rem;font-weight:700;color:#64748b">${info.cobros.length} cobro${info.cobros.length>1?'s':''}</span>
-                <span style="font-size:.6rem;font-weight:700;color:#10b981;background:#f0fdf4;padding:2px 7px;border-radius:99px">💵 $${info.efectivo.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-                <span style="font-size:.6rem;font-weight:700;color:var(--azul);background:#eef3ff;padding:2px 7px;border-radius:99px">🏦 $${info.transf.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-                <span style="font-weight:900;font-size:.88rem;color:var(--azul)">$${info.total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
-            </div>`).join('');
-        // Row total
-        tabla.innerHTML+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;background:var(--azul);border-radius:10px;margin-top:.4rem">
-            <p style="color:white;font-weight:900;font-size:.8rem;text-transform:uppercase">Total del mes</p>
-            <p style="color:white;font-weight:900;font-size:1.2rem">$${totalMes.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
-        </div>`;
-    }catch(e){tabla.innerHTML='<p style="color:red;font-size:.75rem;padding:1rem">Error: '+e.message+' — verifica índices en Firebase</p>';}
+async function cargarIngresosHist() {
+  const mes = $('filtroMesIngr').value;
+  if (!mes) return;
+  const [y, m] = mes.split('-');
+  $('tablaIngresos').innerHTML = '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:1rem">Cargando...</p>';
+  try {
+    const snap = await db.collection('pagos').get();
+    const porDia = {};
+    snap.forEach(d => {
+      const p = d.data();
+      const f = p.fechaString || '';
+      const parts = f.split('/');
+      if (parts.length === 3) {
+        const mm = parts[1].padStart(2,'0'), yy = parts[2];
+        if (mm === m && yy === y) {
+          if (!porDia[f]) porDia[f] = { total:0, ef:0, tf:0, cobros:[] };
+          porDia[f].total += (p.monto||0);
+          if (p.metodo === 'EFECTIVO') porDia[f].ef += (p.monto||0);
+          else porDia[f].tf += (p.monto||0);
+          porDia[f].cobros.push({...p, id: d.id});
+        }
+      }
+    });
+    const dias = Object.keys(porDia).sort((a,b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')));
+    if (!dias.length) { $('tablaIngresos').innerHTML = '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:1.5rem">Sin cobros en este mes</p>'; $('detalleIngreso').style.display='none'; return; }
+    const totalMes = dias.reduce((s, d) => s + porDia[d].total, 0);
+    const fmt = n => '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const dIngresoMes = $('dIngresoMes'); if (dIngresoMes) dIngresoMes.textContent = fmt(totalMes);
+    $('tablaIngresos').innerHTML = dias.map(dia => `
+      <div onclick="mostrarDetalleDia('${dia}', ${JSON.stringify(porDia[dia].cobros).replace(/"/g,'&quot;')})"
+           style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s"
+           onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <p style="font-weight:800;font-size:.8rem">${dia}</p>
+          <p style="font-size:.6rem;color:var(--txt2);font-weight:600">${porDia[dia].cobros.length} cobro(s) · 💵${fmt(porDia[dia].ef)} · 🏦${fmt(porDia[dia].tf)}</p>
+        </div>
+        <p style="font-size:1rem;font-weight:900;color:#059669">${fmt(porDia[dia].total)}</p>
+      </div>`).join('');
+    $('detalleIngreso').style.display = 'none';
+  } catch(e) { toast('❌ ' + e.message); }
 }
 
-let _diaSeleccionado={};
-async function verDetalleDia(dia){
-    const info=_diaSeleccionado[dia];
-    $('detalleIngreso').style.display='block';
-    $('detalleIngresoTitulo').textContent='Cobros del '+dia;
-    // Fetch fresh from Firestore for detail
-    db.collection('pagos').where('fechaString','==',dia).orderBy('fecha','asc').get().then(snap=>{
-        if(snap.empty){$('listaDetalleIngreso').innerHTML='<p style="font-size:.75rem;color:var(--txt2);font-weight:600;padding:1rem">Sin cobros</p>';return;}
-        let html='';
-        snap.forEach(d=>{const p=d.data();
-            const refTag=p.referencia?`<span style="font-size:.58rem;color:var(--azul);font-weight:700;background:#eef3ff;padding:1px 6px;border-radius:6px;margin-left:.3rem">REF: ${p.referencia}</span>`:'';
-            html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:.65rem .9rem;background:#f8fafc;border-radius:10px;border:1px solid var(--border)">
-                <div>
-                    <p style="font-weight:800;font-size:.78rem;text-transform:uppercase">${p.nombre||p.alumnoId}</p>
-                    <p style="font-size:.62rem;color:var(--txt2);font-weight:600">${p.detalle||''} · ${p.metodo||''}${refTag}</p>
-                </div>
-                <p style="font-weight:900;font-size:.95rem;color:var(--azul)">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
-            </div>`;
-        });
-        $('listaDetalleIngreso').innerHTML=html;
-    }).catch(e=>$('listaDetalleIngreso').innerHTML='<p style="color:red;font-size:.75rem">Error: '+e.message+'</p>');
+function mostrarDetalleDia(dia, cobros) {
+  $('detalleIngresoTitulo').textContent = '📋 Recibos del ' + dia;
+  $('detalleIngreso').style.display = 'block';
+  const fmt = n => '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+  $('listaDetalleIngreso').innerHTML = cobros.map(p => {
+    const metIcon = p.metodo==='EFECTIVO'?'💵':p.metodo==='TRANSFERENCIA'?'🏦':'💳';
+    const refTag = p.referencia ? `<span style="font-size:.55rem;color:var(--azul);background:#eef3ff;padding:1px 5px;border-radius:5px;margin-left:.3rem">REF: ${p.referencia}</span>` : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
+      <div>
+        <p style="font-weight:900;font-size:.78rem;text-transform:uppercase">${p.nombre||p.alumnoId||'—'}</p>
+        <p style="font-size:.6rem;font-weight:700;color:var(--azul)">${p.folio||'S/F'}</p>
+        <p style="font-size:.6rem;font-weight:600;color:var(--txt2)">${p.detalle||'—'}${refTag}</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:.9rem;font-weight:900;color:#059669">${fmt(p.monto||0)}</p>
+        <p style="font-size:.6rem;color:var(--txt2)">${metIcon} ${p.metodo||''}</p>
+      </div>
+    </div>`;
+  }).join('') || '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:1rem">Sin recibos</p>';
+  $('detalleIngreso').scrollIntoView({behavior:'smooth', block:'start'});
 }
-
 // Inicializar filtro de mes al cargar
 window.addEventListener('DOMContentLoaded',()=>{
     const hoy=new Date();
     const mesActual=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
     const fi=$('filtroMesIngr');if(fi)fi.value=mesActual;
     setInterval(()=>$('reloj').textContent=new Date().toLocaleTimeString('es-MX'),1000);
-});
+let ingresosDesbloqueado = false;
+function abrirIngresos() {
+  if (ingresosDesbloqueado) { showView('ingresos', document.getElementById('sbIngresos')); return; }
+  $('pinIngresosInput').value = '';
+  $('modalPinIngresos').style.display = 'flex';
+}
+function verificarPinIngresos() {
+  if ($('pinIngresosInput').value === 'gymnastics2026') {
+    ingresosDesbloqueado = true;
+    $('modalPinIngresos').style.display = 'none';
+    const sbItem = document.getElementById('sbIngresos');
+    sbItem.style.opacity = '1';
+    sbItem.style.cursor = 'pointer';
+    sbItem.style.filter = 'none';
+    showView('ingresos', sbItem);
+  } else { toast('❌ Contraseña incorrecta'); }
+}
+
+let cuponAplicado = false;
+const CUPON_VALIDO = 'APERTURA2026';
+const FECHA_FIN_CUPON = new Date('2026-04-01');
+
+function verificarCupon() {
+  const val = $('rCupon').value.trim().toUpperCase();
+  const hoy = new Date();
+  if (val === CUPON_VALIDO && hoy < FECHA_FIN_CUPON) {
+    cuponAplicado = true;
+    $('cuponEstado').textContent = '✅ Inscripción GRATIS';
+    $('cuponEstado').style.color = '#059669';
+  } else if (val === CUPON_VALIDO && hoy >= FECHA_FIN_CUPON) {
+    cuponAplicado = false;
+    $('cuponEstado').textContent = '⏰ Cupón expirado';
+    $('cuponEstado').style.color = '#d97706';
+  } else if (val) {
+    cuponAplicado = false;
+    $('cuponEstado').textContent = '❌ Cupón inválido';
+    $('cuponEstado').style.color = '#dc2626';
+  } else {
+    cuponAplicado = false;
+    $('cuponEstado').textContent = '';
+  }
+}
+
+async function cargarPagosRecientes(alumnoId) {
+  const cajaPagos = $('cajaPagosRecientes');
+  if (!cajaPagos) return;
+  try {
+    const snap = await db.collection('pagos').where('alumnoId','==',alumnoId).orderBy('fecha','desc').limit(5).get();
+    const fmt = n => '$' + n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if (snap.empty) { cajaPagos.innerHTML = '<p style="font-size:.65rem;color:var(--txt2);text-align:center;padding:.5rem">Sin pagos registrados</p>'; return; }
+    cajaPagos.innerHTML = snap.docs.map(d => {
+      const p = d.data();
+      const metIcon = p.metodo==='EFECTIVO'?'💵':p.metodo==='TRANSFERENCIA'?'🏦':'💳';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .65rem;background:#f8fafc;border-radius:8px;border:1px solid var(--border)">
+        <div><p style="font-size:.7rem;font-weight:800">${p.detalle||'—'}</p><p style="font-size:.58rem;color:var(--txt2)">${p.fechaString||''} · ${metIcon} ${p.metodo||''}</p></div>
+        <p style="font-size:.78rem;font-weight:900;color:#059669">${fmt(p.monto||0)}</p>
+      </div>`;
+    }).join('');
+  } catch(e) { cajaPagos.innerHTML = '<p style="font-size:.65rem;color:var(--txt2);text-align:center">Error al cargar</p>'; }
+}
+
+let asistenciaTemp = {};
+
+async function cargarAsistenciaClase() {
+  if (!claseActualID) return;
+  const fecha = $('asistFecha').value;
+  if (!fecha) return;
+  const snap = await db.collection('reservas').where('claseId','==',claseActualID).where('estado','==','confirmada').get();
+  const asistSnap = await db.collection('asistencias').where('claseId','==',claseActualID).where('fecha','==',fecha).get();
+  const asistMap = {};
+  asistSnap.docs.forEach(d => { asistMap[d.data().alumnoId] = d.data().tipo; });
+  asistenciaTemp = {};
+  if (snap.empty) { $('listaAsistencia').innerHTML = '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:1.5rem">Sin alumnos inscritos</p>'; return; }
+  snap.docs.forEach(d => {
+    const aid = d.data().alumnoId;
+    asistenciaTemp[aid] = asistMap[aid] || 'ausente';
+  });
+  $('listaAsistencia').innerHTML = snap.docs.map(d => {
+    const aid = d.data().alumnoId;
+    const nombre = d.data().alumnoNombre || aid;
+    const est = asistenciaTemp[aid] || 'ausente';
+    return `<div id="ar-${aid}" style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;border-radius:10px;border:1px solid var(--border);background:white">
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--azul);color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem">${nombre.charAt(0)}</div>
+        <div><p style="font-weight:800;font-size:.75rem;text-transform:uppercase">${nombre}</p><p style="font-size:.58rem;color:var(--txt2);font-family:monospace">${aid}</p></div>
+      </div>
+      <div style="display:flex;gap:.3rem">
+        <button onclick="setAsistencia('${aid}','presente')" id="ab-p-${aid}" class="btn" style="font-size:.65rem;padding:.3rem .5rem;background:${est==='presente'?'#10b981':'#f1f5f9'};color:${est==='presente'?'white':'var(--txt2)'}">✅</button>
+        <button onclick="setAsistencia('${aid}','tarde')" id="ab-t-${aid}" class="btn" style="font-size:.65rem;padding:.3rem .5rem;background:${est==='tarde'?'#f59e0b':'#f1f5f9'};color:${est==='tarde'?'white':'var(--txt2)'}">⏰</button>
+        <button onclick="setAsistencia('${aid}','ausente')" id="ab-a-${aid}" class="btn" style="font-size:.65rem;padding:.3rem .5rem;background:${est==='ausente'?'#ef4444':'#f1f5f9'};color:${est==='ausente'?'white':'var(--txt2)'}">❌</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setAsistencia(aid, tipo) {
+  asistenciaTemp[aid] = tipo;
+  const colores = { presente:'#10b981', tarde:'#f59e0b', ausente:'#ef4444' };
+  ['presente','tarde','ausente'].forEach(t => {
+    const btn = $('ab-' + t.charAt(0) + '-' + aid);
+    if (btn) { btn.style.background = tipo===t ? colores[t] : '#f1f5f9'; btn.style.color = tipo===t ? 'white' : 'var(--txt2)'; }
+  });
+}
+
+async function guardarAsistencia() {
+  const fecha = $('asistFecha').value;
+  if (!fecha || !claseActualID) return;
+  const clase = clasesCached.find(c => c.id === claseActualID);
+  const batch = db.batch();
+  for (const [aid, tipo] of Object.entries(asistenciaTemp)) {
+    const nombreEl = document.querySelector('#ar-' + aid + ' p');
+    const nombre = nombreEl ? nombreEl.textContent : aid;
+    const ref = db.collection('asistencias').doc(claseActualID + '_' + fecha + '_' + aid);
+    batch.set(ref, { claseId: claseActualID, claseNombre: clase?.nombre||'', alumnoId: aid, alumnoNombre: nombre, fecha, tipo, registradoEn: new Date() });
+  }
+  try { await batch.commit(); toast('✅ Asistencia guardada'); } catch(e) { toast('❌ ' + e.message); }
+}
+
+function setHorarioMañana() {
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  $('horarioDia').value = d.toISOString().split('T')[0];
+  cargarHorarioDia();
+}
+
+async function cargarHorarioDia() {
+  const fecha = $('horarioDia').value;
+  if (!fecha) return;
+  const d = new Date(fecha + 'T12:00:00');
+  const diasNombre = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaNombre = diasNombre[d.getDay()];
+  $('horarioClases').innerHTML = '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:2rem">Cargando...</p>';
+  try {
+    const snap = await db.collection('catalogo').where('tipo','==','clase').where('activa','==',true).get();
+    const clasesDia = snap.docs
+      .filter(doc => { const ds = doc.data().diasSemana||[doc.data().dia||'']; return ds.includes(diaNombre) || ds.includes(diaNombre.toLowerCase()); })
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a,b) => (a.inicio||'').localeCompare(b.inicio||''));
+    $('horarioResumen').innerHTML = `
+      <div class="stat-card"><div class="accent" style="background:var(--azul)"></div><p class="stat-lbl">Clases del día</p><p class="stat-val">${clasesDia.length}</p></div>
+      <div class="stat-card"><div class="accent" style="background:#10b981"></div><p class="stat-lbl">Con profesor</p><p class="stat-val" style="color:#059669">${clasesDia.filter(c=>c.profesor).length}</p></div>
+      <div class="stat-card"><div class="accent" style="background:#f59e0b"></div><p class="stat-lbl">Sin asignar</p><p class="stat-val" style="color:#d97706">${clasesDia.filter(c=>!c.profesor).length}</p></div>
+    `;
+    if (!clasesDia.length) {
+      $('horarioClases').innerHTML = `<div class="card" style="padding:3rem;text-align:center;color:var(--txt2)"><i class="fa-solid fa-calendar-xmark" style="font-size:2rem;opacity:.2;display:block;margin-bottom:1rem"></i><p style="font-weight:800;font-size:.85rem;text-transform:uppercase">Sin clases para ${diaNombre}</p></div>`;
+      return;
+    }
+    const clasesConInscritos = await Promise.all(clasesDia.map(async clase => {
+      const resSnap = await db.collection('reservas').where('claseId','==',clase.id).where('estado','==','confirmada').get();
+      return { ...clase, inscritos: resSnap.size, alumnosLista: resSnap.docs.map(d => ({ id: d.data().alumnoId, nombre: d.data().alumnoNombre||d.data().alumnoId })) };
+    }));
+    $('horarioClases').innerHTML = clasesConInscritos.map(clase => `
+      <div class="card" style="padding:1.2rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <div style="width:44px;height:44px;border-radius:12px;background:${clase.area==='fitness'?'var(--rojo)':'var(--azul)'};color:white;display:flex;align-items:center;justify-content:center;font-size:1.3rem">${clase.icon||'📚'}</div>
+            <div>
+              <p style="font-weight:900;font-size:.9rem;text-transform:uppercase">${clase.nombre}</p>
+              <p style="font-size:.65rem;font-weight:700;color:var(--txt2)">⏰ ${clase.inicio||'--'} – ${clase.fin||'--'} · ${diaNombre}</p>
+              <p style="font-size:.65rem;font-weight:700;color:${clase.profesor?'var(--azul)':'#f59e0b'}">👤 ${clase.profesor||'⚠️ Sin profesor asignado'}</p>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <p style="font-size:1.5rem;font-weight:900;color:var(--azul)">${clase.inscritos}</p>
+            <p style="font-size:.55rem;font-weight:800;color:var(--txt2);text-transform:uppercase">inscritos</p>
+            <p style="font-size:.58rem;color:var(--txt2)">${clase.cupoDisponible??clase.cupo??'—'} lugares</p>
+          </div>
+        </div>
+        ${clase.alumnosLista.length ? `
+        <details style="margin-top:.5rem">
+          <summary style="font-size:.65rem;font-weight:800;color:var(--azul);cursor:pointer;text-transform:uppercase;letter-spacing:.05em">Ver lista de alumnos (${clase.alumnosLista.length})</summary>
+          <div style="display:flex;flex-direction:column;gap:.3rem;margin-top:.5rem;max-height:200px;overflow-y:auto">
+            ${clase.alumnosLista.map((a,i) => `
+              <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .7rem;background:#f8fafc;border-radius:8px">
+                <span style="font-size:.65rem;font-weight:900;color:var(--txt2);width:20px">${i+1}.</span>
+                <span style="font-size:.72rem;font-weight:800;text-transform:uppercase">${a.nombre}</span>
+                <span style="font-size:.58rem;color:var(--txt2);font-family:monospace;margin-left:auto">${a.id}</span>
+              </div>`).join('')}
+          </div>
+        </details>` : '<p style="font-size:.65rem;color:#94a3b8;font-weight:600;margin-top:.3rem">Sin alumnos inscritos aún</p>'}
+        ${!clase.profesor ? '<div style="margin-top:.5rem;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:.5rem .75rem;font-size:.65rem;font-weight:700;color:#d97706">⚠️ Esta clase no tiene profesor asignado. Asignar desde el panel de clases.</div>' : ''}
+      </div>
+    `).join('');
+  } catch(e) { toast('❌ ' + e.message); $('horarioClases').innerHTML = ''; }
+}
 </script>
+
+<div id="view-horario" class="view">
+  <h1 class="page-title">Horario <span>Próximas Clases</span></h1>
+  <div class="card" style="padding:1.2rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <div>
+        <label class="lbl">Ver día</label>
+        <input id="horarioDia" type="date" class="inp" style="width:180px">
+      </div>
+      <button onclick="cargarHorarioDia()" class="btn btn-azul" style="margin-top:1.1rem"><i class="fa-solid fa-magnifying-glass"></i> Ver Clases</button>
+      <button onclick="setHorarioMañana()" class="btn btn-ghost" style="margin-top:1.1rem"><i class="fa-solid fa-forward"></i> Mañana</button>
+    </div>
+  </div>
+  <div id="horarioResumen" class="grid-3-col-stats" style="margin-bottom:1rem"></div>
+  <div id="horarioClases" style="display:flex;flex-direction:column;gap:.75rem"></div>
+</div>
+
+<div id="modalPinIngresos" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="card" style="padding:2rem;width:100%;max-width:320px;text-align:center">
+    <p style="font-weight:900;font-size:1rem;text-transform:uppercase;margin-bottom:.3rem">🔒 Área Restringida</p>
+    <p style="font-size:.7rem;color:var(--txt2);font-weight:600;margin-bottom:1rem">Ingresa la contraseña para ver los ingresos</p>
+    <input id="pinIngresosInput" type="password" class="inp" placeholder="Contraseña" style="margin-bottom:.75rem;text-align:center">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+      <button onclick="verificarPinIngresos()" class="btn btn-azul" style="justify-content:center">Entrar</button>
+      <button onclick="document.getElementById('modalPinIngresos').style.display='none'" class="btn btn-ghost" style="justify-content:center">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
