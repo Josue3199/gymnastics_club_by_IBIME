@@ -986,7 +986,7 @@ async function registrarCobro(){
         if(referencia)pagoData.referencia=referencia;
         await db.collection('pagos').add(pagoData);
         if (typeof rtdb !== 'undefined') {
-          try { rtdb.ref('notificaciones/' + alumnoEnCaja.id).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) {}
+          try { rtdb.ref('notificaciones/' + alumnoEnCaja.id).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) { console.warn('RTDB notification failed:', e); }
         }
         const resSnap=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
         await Promise.all(resSnap.docs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
@@ -1443,8 +1443,9 @@ async function cargarIngresosHist() {
     const totalMes = dias.reduce((s, d) => s + porDia[d].total, 0);
     const fmt = n => '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
     const dIngresoMes = $('dIngresoMes'); if (dIngresoMes) dIngresoMes.textContent = fmt(totalMes);
+    window._ingresosCache = porDia;
     $('tablaIngresos').innerHTML = dias.map(dia => `
-      <div onclick="mostrarDetalleDia('${dia}', ${JSON.stringify(porDia[dia].cobros).replace(/"/g,'&quot;')})"
+      <div onclick="mostrarDetalleDia('${dia.replace(/'/g,"\\'")}')"
            style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s"
            onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
@@ -1457,7 +1458,9 @@ async function cargarIngresosHist() {
   } catch(e) { toast('❌ ' + e.message); }
 }
 
-function mostrarDetalleDia(dia, cobros) {
+function mostrarDetalleDia(dia) {
+  const porDia = window._ingresosCache || {};
+  const cobros = (porDia[dia] && porDia[dia].cobros) ? porDia[dia].cobros : [];
   $('detalleIngresoTitulo').textContent = '📋 Recibos del ' + dia;
   $('detalleIngreso').style.display = 'block';
   const fmt = n => '$' + n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
