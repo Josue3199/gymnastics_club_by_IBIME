@@ -1,1 +1,0 @@
-# gymnastics_club_by_IBIME
