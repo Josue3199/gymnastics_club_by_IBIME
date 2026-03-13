@@ -195,6 +195,24 @@ select,input{font-family:'DM Sans',sans-serif}
 .move-form label{font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:.15rem}
 .btn-confirmar-mover{width:100%;padding:.4rem;border-radius:6px;border:none;cursor:pointer;font-weight:700;font-size:.62rem;background:var(--accent2);color:white;transition:all .2s}
 .btn-cancelar-mover{width:100%;padding:.38rem;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-weight:700;font-size:.62rem;background:none;color:var(--muted);transition:all .2s;margin-top:.25rem}
+
+/* ── DRAG & DROP ── */
+.drag-over{background:rgba(255,255,255,.08)!important;outline:2px dashed var(--accent2)!important;}
+.clase-chip[draggable="true"]{cursor:grab;}
+.clase-chip.dragging{opacity:.4;}
+
+/* ── INLINE EDIT FIELDS ── */
+.inline-field-row{display:flex;align-items:center;justify-content:space-between;gap:.3rem;margin-top:.3rem}
+.inline-field-row label{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+.inline-num-input{background:rgba(255,255,255,.05);border:none;border-bottom:1px dashed rgba(255,255,255,.2);color:var(--txt);font-size:.65rem;font-weight:600;width:72px;text-align:right;padding:1px 3px;outline:none;font-family:'DM Sans',sans-serif;border-radius:0}
+.inline-num-input:focus{border-bottom-color:var(--accent2);color:white}
+.cupo-mini-ctrl{display:flex;align-items:center;gap:.3rem}
+.cupo-mini-ctrl button{width:18px;height:18px;border-radius:4px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--txt);cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cupo-mini-ctrl button:hover{border-color:var(--accent2);color:var(--accent2)}
+.cupo-mini-ctrl span{font-family:'Bebas Neue';font-size:1.1rem;min-width:22px;text-align:center}
+
+/* ── PUB CARD CHECKBOX ── */
+.pub-card-check{width:16px;height:16px;cursor:pointer;accent-color:var(--accent2)}
 </style>
 </head>
 <body>
@@ -302,13 +320,16 @@ select,input{font-family:'DM Sans',sans-serif}
 <div id="view-publicar" class="view">
   <div class="horario-header">
     <div class="horario-titulo" style="font-size:1.6rem">Publicar en <span style="color:var(--accent2)">Firebase</span></div>
-    <div style="display:flex;gap:.8rem;align-items:center">
-      <span style="font-size:.7rem;color:var(--muted)">Cupo predeterminado:</span>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <span style="font-size:.7rem;color:var(--muted)">Cupo pred.:</span>
       <select id="cupoPredeterminado" style="background:var(--surface);border:1px solid var(--border);color:white;padding:.4rem .6rem;border-radius:6px;font-size:.7rem;font-weight:700" onchange="renderPubGrid()">
         <option value="10">10</option><option value="15">15</option>
         <option value="20" selected>20</option><option value="25">25</option><option value="30">30</option>
       </select>
       <button onclick="publicarTodo()" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Publicar TODO</button>
+      <button onclick="publicarSeleccionadas()" class="btn btn-orange"><i class="fa-solid fa-check-double"></i> Publicar Seleccionadas</button>
+      <button onclick="eliminarSeleccionadas()" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar Seleccionadas</button>
+      <button onclick="limpiarFirebase()" class="btn-danger-sm"><i class="fa-solid fa-fire"></i> Eliminar TODO</button>
     </div>
   </div>
   <div class="pub-grid" id="pubGrid"></div>
@@ -318,8 +339,9 @@ select,input{font-family:'DM Sans',sans-serif}
 <div id="view-importar" class="view">
   <div class="horario-header">
     <div class="horario-titulo" style="font-size:1.6rem">Carga <span style="color:var(--accent2)">Masiva</span></div>
-    <div style="display:flex;gap:.8rem">
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap">
       <button onclick="importarTodas()" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Importar Todas</button>
+      <button onclick="actualizarEnFirebase()" class="btn btn-indigo"><i class="fa-solid fa-rotate"></i> 🔄 Actualizar en Firebase</button>
       <button onclick="limpiarFirebase()" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Limpiar Firebase</button>
     </div>
   </div>
@@ -343,10 +365,14 @@ select,input{font-family:'DM Sans',sans-serif}
 <div id="view-alumno" class="view">
   <div class="horario-header">
     <div class="horario-titulo" style="font-size:1.6rem">Vista <span style="color:#34d399">Alumno</span></div>
-    <div style="display:flex;gap:.8rem;align-items:center">
+    <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
       <div style="display:flex;gap:.4rem">
         <button onclick="renderVistaAlumno('fitness')" id="btnVaFit" class="btn btn-orange">🏃 Fitness</button>
         <button onclick="renderVistaAlumno('gimnasia')" id="btnVaGym" class="btn btn-indigo" style="opacity:.5">🤸 Gimnasia</button>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button onclick="publicarArea('fitness')" class="btn btn-orange"><i class="fa-solid fa-rocket"></i> Publicar Fitness</button>
+        <button onclick="publicarArea('gimnasia')" class="btn btn-indigo"><i class="fa-solid fa-rocket"></i> Publicar Gimnasia</button>
       </div>
       <span style="font-size:.65rem;color:var(--muted);font-weight:600">Así ve el alumno las disciplinas y horarios disponibles</span>
     </div>
@@ -553,13 +579,21 @@ function renderGrid(horario,contenedorId,area){
       const clases=franja.dias[dia]||[];
       const enFB=clases.some(c=>clasesEnFirebase.has(fbKey(c,franja.hora,dia)));
       const isActiva=celdaActiva&&celdaActiva.hora===franja.hora&&celdaActiva.dia===dia&&celdaActiva.area===area;
+      const diaEnc=encodeURIComponent(dia);
+      const horaEnc=encodeURIComponent(franja.hora);
       html+=`<div class="gh-cell ${enFB?'celda-fb':''}">
         <div class="clases-celda ${isActiva?(area==='fitness'?'editando-fit':'editando'):''}"
-             onclick="abrirCelda('${franja.hora}','${dia}','${area}',${fi})" title="${franja.hora} · ${dia}">
+             onclick="abrirCelda('${franja.hora}','${dia}','${area}',${fi})" title="${franja.hora} · ${dia}"
+             ondragover="onDragOver(event,this)" ondragleave="onDragLeave(event,this)"
+             ondrop="onDrop(event,this,'${franja.hora}','${dia}','${area}',${fi})">
           ${clases.length===0?`<div class="chip-add">+ agregar</div>`:
             clases.map(c=>{
               const prof=getProf(c,franja.hora,dia);
-              return`<div class="clase-chip ${getChipClass(c)}">${getIcono(c)} ${c}${prof?`<span class="chip-prof">👤 ${prof}</span>`:''}</div>`;
+              const cEnc=encodeURIComponent(c);
+              return`<div class="clase-chip ${getChipClass(c)}" draggable="true"
+                ondragstart="onDragStart(event,'${cEnc}','${horaEnc}','${diaEnc}','${area}')"
+                ondragend="this.classList.remove('dragging')"
+                onclick="event.stopPropagation()">${getIcono(c)} ${c}${prof?`<span class="chip-prof">👤 ${prof}</span>`:''}</div>`;
             }).join('')}
         </div>
       </div>`;
@@ -610,6 +644,13 @@ function renderEditPanel(hora,dia,area,franjaIdx){
       const sn=c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const kSafe=k.replace(/"/g,'&quot;');
       const profSafe=(prof||'').replace(/"/g,'&quot;');
+      const docData=enFB?fbDocsMap.get(k):null;
+      const costos=area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
+      const pronto=area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
+      const precioVal=docData?.precio??costos[1];
+      const prontoPagoVal=docData?.precioPronto??pronto[1];
+      const cupoClase=docData?.cupo??getCupo(hora,dia);
+      const docId=docData?.id||'';
       return`<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:7px;padding:.4rem .5rem;margin-bottom:.35rem">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:.3rem">
           <div class="edit-chip ${getChipClass(c)}" style="cursor:default;flex:1;min-width:0;overflow:hidden">
@@ -626,6 +667,28 @@ function renderEditPanel(hora,dia,area,franjaIdx){
             value="${profSafe}"
             placeholder="👤 Nombre del profesor..."
             onblur="onProfBlur(this)">
+        </div>
+        <div class="inline-field-row">
+          <label>Precio</label>
+          <input type="number" class="inline-num-input"
+            data-clave="${kSafe}" data-enfb="${enFB?'1':'0'}" data-docid="${docId}" data-field="precio"
+            value="${precioVal}" min="0" step="1"
+            onblur="onInlineFieldBlur(this)">
+        </div>
+        <div class="inline-field-row">
+          <label>Pronto pago</label>
+          <input type="number" class="inline-num-input"
+            data-clave="${kSafe}" data-enfb="${enFB?'1':'0'}" data-docid="${docId}" data-field="precioPronto"
+            value="${prontoPagoVal}" min="0" step="1"
+            onblur="onInlineFieldBlur(this)">
+        </div>
+        <div class="inline-field-row">
+          <label>Cupo</label>
+          <div class="cupo-mini-ctrl">
+            <button onclick="cambiarCupoClase('${kSafe}','${docId}',${enFB?'true':'false'},-1,this)">−</button>
+            <span data-cupo-display="${kSafe}">${cupoClase}</span>
+            <button onclick="cambiarCupoClase('${kSafe}','${docId}',${enFB?'true':'false'},1,this)">+</button>
+          </div>
         </div>
         <div id="moveForm_${area}_${i}" style="display:none"></div>
       </div>`;
@@ -934,12 +997,15 @@ function renderPubGrid(){
     const enFB=clasesEnFirebase.has(k);
     const area=c.area;
     const prof=enFB?(fbDocsMap.get(k)?.profesor||''):(profesoresLocal[k]||'');
-    return`<div class="pub-card ${enFB?'en-fb':''}">
+    return`<div class="pub-card ${enFB?'en-fb':''}" id="pubcard-${i}">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:.5rem">
-        <div>
-          <div class="pub-nombre">${getIcono(c.nombre)} ${c.nombre}</div>
-          <div style="font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:3px;display:inline-block;background:${area==='fitness'?'rgba(249,115,22,.15)':'rgba(99,102,241,.15)'};color:${area==='fitness'?'var(--fitness)':'var(--gimnasia)'}">${area}</div>
-          ${prof?`<div style="font-size:.55rem;color:var(--muted);margin-top:3px">👤 ${prof}</div>`:''}
+        <div style="display:flex;align-items:start;gap:.5rem">
+          <input type="checkbox" class="pub-card-check" id="pubchk-${i}" title="Seleccionar para publicar/eliminar">
+          <div>
+            <div class="pub-nombre">${getIcono(c.nombre)} ${c.nombre}</div>
+            <div style="font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:3px;display:inline-block;background:${area==='fitness'?'rgba(249,115,22,.15)':'rgba(99,102,241,.15)'};color:${area==='fitness'?'var(--fitness)':'var(--gimnasia)'}">${area}</div>
+            ${prof?`<div style="font-size:.55rem;color:var(--muted);margin-top:3px">👤 ${prof}</div>`:''}
+          </div>
         </div>
         ${enFB?'<span style="color:var(--accent2);font-size:.62rem;font-weight:700">✅ En Firebase</span>':''}
       </div>
@@ -1023,37 +1089,43 @@ async function importarTodas(){
   const cupo=20;
   document.getElementById('importProgress').style.display='block';
   const log=document.getElementById('importLog');
-  let ok=0,err=0,pen=clasesPlanas.length;
+  let ok=0,upd=0,err=0,pen=clasesPlanas.length;
   document.getElementById('logPen').innerText=pen;
   log.innerHTML='';
   for(const c of clasesPlanas){
     const costos=c.area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
     const pronto=c.area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
     const k=fbKey(c.nombre,c.hora,c.dia);
-    const profesor=profesoresLocal[k]||'';
+    const profesor=profesoresLocal[k]||fbDocsMap.get(k)?.profesor||'';
     const row=document.createElement('div');
     row.className='prog-item';
     row.innerHTML=`<span>${getIcono(c.nombre)} ${c.nombre} · ${c.dia} ${c.inicio}-${c.fin}</span><span class="prog-pen">⏳</span>`;
     log.appendChild(row);
+    const payload={
+      nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
+      dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
+      precio:costos[1],precioPronto:pronto[1],
+      icon:c.icono,profesor,activa:true,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    };
     try{
-      await db.collection('catalogo').add({
-        nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
-        dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
-        precio:costos[1],precioPronto:pronto[1],
-        icon:c.icono,profesor,activa:true,
-        timestamp:firebase.firestore.FieldValue.serverTimestamp()
-      });
-      row.querySelector('span:last-child').innerHTML='<span class="prog-ok">✅</span>';ok++;
+      if(clasesEnFirebase.has(k)){
+        await db.collection('catalogo').doc(fbDocsMap.get(k).id).update(payload);
+        row.querySelector('span:last-child').innerHTML='<span class="prog-ok">🔄</span>';upd++;
+      }else{
+        await db.collection('catalogo').add(payload);
+        row.querySelector('span:last-child').innerHTML='<span class="prog-ok">✅</span>';ok++;
+      }
     }catch(e){
       row.querySelector('span:last-child').innerHTML='<span class="prog-err">❌</span>';err++;
     }
     pen--;
-    document.getElementById('logOk').innerText=ok;
+    document.getElementById('logOk').innerText=ok+upd;
     document.getElementById('logErr').innerText=err;
     document.getElementById('logPen').innerText=pen;
     log.scrollTop=log.scrollHeight;
   }
-  toast('🎉 Importación completa: '+ok+' clases',6000);
+  toast('🎉 Importación: '+ok+' nuevas · 🔄 '+upd+' actualizadas · ❌ '+err+' errores',6000);
 }
 
 async function limpiarFirebase(){
@@ -1179,6 +1251,200 @@ function renderVistaAlumno(area){
 
   document.getElementById('vistaAlumnoGrid').innerHTML=html||
     '<p style="color:var(--muted);font-size:.8rem;font-weight:600;padding:2rem;grid-column:1/-1;text-align:center">Sin clases configuradas</p>';
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────
+let _dragData=null;
+
+function onDragStart(event,cEnc,horaEnc,diaEnc,area){
+  const nombre=decodeURIComponent(cEnc);
+  const hora=decodeURIComponent(horaEnc);
+  const dia=decodeURIComponent(diaEnc);
+  _dragData={nombre,hora,dia,area};
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain',JSON.stringify(_dragData));
+  event.target.classList.add('dragging');
+}
+
+function onDragOver(event,el){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  el.classList.add('drag-over');
+}
+
+function onDragLeave(event,el){
+  if(!el.contains(event.relatedTarget))el.classList.remove('drag-over');
+}
+
+async function onDrop(event,el,newHora,newDia,newArea,newFi){
+  event.preventDefault();
+  el.classList.remove('drag-over');
+  let data=_dragData;
+  if(!data){try{data=JSON.parse(event.dataTransfer.getData('text/plain'));}catch(e){return;}}
+  if(!data)return;
+  const {nombre,hora:oldHora,dia:oldDia,area:oldArea}=data;
+  _dragData=null;
+  if(oldHora===newHora&&oldDia===newDia&&oldArea===newArea)return;
+
+  const srcHorario=oldArea==='fitness'?HORARIO_FITNESS:HORARIO_GIMNASIA;
+  const dstHorario=newArea==='fitness'?HORARIO_FITNESS:HORARIO_GIMNASIA;
+
+  // Remove from source
+  const srcFi=srcHorario.findIndex(f=>f.hora===oldHora);
+  if(srcFi!==-1&&srcHorario[srcFi].dias[oldDia]){
+    srcHorario[srcFi].dias[oldDia]=srcHorario[srcFi].dias[oldDia].filter(n=>n!==nombre);
+  }
+
+  // Add to destination (creating franja if needed)
+  let dstFiReal=dstHorario.findIndex(f=>f.hora===newHora);
+  if(dstFiReal===-1){dstHorario.push({hora:newHora,dias:{}});dstFiReal=dstHorario.length-1;}
+  if(!dstHorario[dstFiReal].dias[newDia])dstHorario[dstFiReal].dias[newDia]=[];
+  if(!dstHorario[dstFiReal].dias[newDia].includes(nombre))dstHorario[dstFiReal].dias[newDia].push(nombre);
+
+  // Firebase update if class was in Firebase
+  const oldKey=fbKey(nombre,oldHora,oldDia);
+  if(clasesEnFirebase.has(oldKey)){
+    const docData=fbDocsMap.get(oldKey);
+    const [newInicio,newFin]=newHora.split('-');
+    try{
+      await db.collection('catalogo').doc(docData.id).update({
+        dia:newDia,inicio:newInicio,fin:newFin,diasSemana:[newDia]
+      });
+      toast('✅ "'+nombre+'" movida a '+newDia+' '+newHora);
+    }catch(e){toast('❌ '+e.message);}
+  }else{
+    toast('✅ "'+nombre+'" movida localmente a '+newDia+' '+newHora);
+  }
+
+  // Move professor local data
+  const newKey=fbKey(nombre,newHora,newDia);
+  if(profesoresLocal[oldKey]){profesoresLocal[newKey]=profesoresLocal[oldKey];delete profesoresLocal[oldKey];}
+
+  // Re-render both grids
+  renderGrid(HORARIO_FITNESS,'gridFitness','fitness');
+  renderGrid(HORARIO_GIMNASIA,'gridGimnasia','gimnasia');
+  recalcPlanas();
+}
+
+// ── INLINE FIELD BLUR HANDLER ─────────────────────────────────────
+function onInlineFieldBlur(el){
+  const field=el.dataset.field;
+  const val=parseFloat(el.value)||0;
+  const enFB=el.dataset.enfb==='1';
+  const docId=el.dataset.docid;
+  if(enFB&&docId){
+    db.collection('catalogo').doc(docId).update({[field]:val}).catch(e=>console.warn('Error actualizando '+field,e));
+  }
+}
+
+// ── CUPO INDIVIDUAL POR CLASE ─────────────────────────────────────
+function cambiarCupoClase(kSafe,docId,enFB,delta,btnEl){
+  const display=document.querySelector('[data-cupo-display="'+kSafe.replace(/"/g,'&quot;')+'"]');
+  if(!display)return;
+  const cur=parseInt(display.textContent)||1;
+  const nuevo=Math.max(1,Math.min(100,cur+delta));
+  display.textContent=nuevo;
+  if(enFB&&docId){
+    db.collection('catalogo').doc(docId).update({cupo:nuevo,cupoDisponible:nuevo}).catch(e=>console.warn('Error actualizando cupo',e));
+  }
+}
+
+// ── PUBLICAR SELECCIONADAS ────────────────────────────────────────
+async function publicarSeleccionadas(){
+  const checks=document.querySelectorAll('[id^="pubchk-"]:checked');
+  if(!checks.length){toast('⚠️ Selecciona al menos una clase');return;}
+  let ok=0,upd=0,err=0;
+  for(const chk of checks){
+    const i=parseInt(chk.id.replace('pubchk-',''));
+    const c=clasesPlanas[i];
+    if(!c)continue;
+    const k=fbKey(c.nombre,c.hora,c.dia);
+    const cupo=parseInt(document.getElementById('cupo-'+i)?.value||20);
+    const costos=c.area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
+    const pronto=c.area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
+    const profesor=profesoresLocal[k]||fbDocsMap.get(k)?.profesor||'';
+    const payload={
+      nombre:c.nombre,tipo:'clase',area:c.area,inicio:c.inicio,fin:c.fin,
+      dia:c.dia,diasSemana:[c.dia],cupo,cupoDisponible:cupo,
+      precio:costos[1],precioPronto:pronto[1],
+      icon:c.icono,profesor,activa:true,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    };
+    try{
+      if(clasesEnFirebase.has(k)){
+        await db.collection('catalogo').doc(fbDocsMap.get(k).id).update(payload);
+        upd++;
+      }else{
+        await db.collection('catalogo').add(payload);
+        ok++;
+      }
+    }catch(e){err++;}
+  }
+  toast('✅ '+ok+' publicadas · 🔄 '+upd+' actualizadas · ❌ '+err+' errores',5000);
+}
+
+// ── ELIMINAR SELECCIONADAS ────────────────────────────────────────
+async function eliminarSeleccionadas(){
+  const checks=document.querySelectorAll('[id^="pubchk-"]:checked');
+  if(!checks.length){toast('⚠️ Selecciona al menos una clase');return;}
+  const inFB=[...checks].filter(chk=>{
+    const i=parseInt(chk.id.replace('pubchk-',''));
+    const c=clasesPlanas[i];
+    return c&&clasesEnFirebase.has(fbKey(c.nombre,c.hora,c.dia));
+  });
+  if(!inFB.length){toast('⚠️ Ninguna clase seleccionada está en Firebase');return;}
+  if(!confirm('¿Eliminar de Firebase las '+inFB.length+' clases seleccionadas?'))return;
+  let ok=0,err=0;
+  for(const chk of inFB){
+    const i=parseInt(chk.id.replace('pubchk-',''));
+    const c=clasesPlanas[i];
+    const k=fbKey(c.nombre,c.hora,c.dia);
+    const docData=fbDocsMap.get(k);
+    try{
+      await db.collection('catalogo').doc(docData.id).delete();
+      ok++;
+    }catch(e){err++;}
+  }
+  toast('🗑️ '+ok+' eliminadas · ❌ '+err+' errores',5000);
+}
+
+// ── ACTUALIZAR EN FIREBASE (carga masiva) ─────────────────────────
+async function actualizarEnFirebase(){
+  recalcPlanas();
+  document.getElementById('importProgress').style.display='block';
+  const log=document.getElementById('importLog');
+  log.innerHTML='';
+  let ok=0,err=0;
+  const toUpdate=clasesPlanas.filter(c=>clasesEnFirebase.has(fbKey(c.nombre,c.hora,c.dia)));
+  document.getElementById('logPen').innerText=toUpdate.length;
+  document.getElementById('logOk').innerText=0;
+  document.getElementById('logErr').innerText=0;
+  for(const c of toUpdate){
+    const k=fbKey(c.nombre,c.hora,c.dia);
+    const docData=fbDocsMap.get(k);
+    const costos=c.area==='fitness'?COSTOS_FITNESS:COSTOS_GIMNASIA;
+    const pronto=c.area==='fitness'?COSTOS_FITNESS_PRONTO:COSTOS_GIMNASIA_PRONTO;
+    const profesor=profesoresLocal[k]||docData?.profesor||'';
+    const cupo=docData?.cupo||getCupo(c.hora,c.dia);
+    const row=document.createElement('div');
+    row.className='prog-item';
+    row.innerHTML=`<span>${getIcono(c.nombre)} ${c.nombre} · ${c.dia} ${c.inicio}-${c.fin}</span><span class="prog-pen">⏳</span>`;
+    log.appendChild(row);
+    try{
+      await db.collection('catalogo').doc(docData.id).update({
+        profesor,cupo,precio:costos[1],precioPronto:pronto[1],activa:true,
+        timestamp:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      row.querySelector('span:last-child').innerHTML='<span class="prog-ok">🔄</span>';ok++;
+    }catch(e){
+      row.querySelector('span:last-child').innerHTML='<span class="prog-err">❌</span>';err++;
+    }
+    document.getElementById('logOk').innerText=ok;
+    document.getElementById('logErr').innerText=err;
+    document.getElementById('logPen').innerText=toUpdate.length-ok-err;
+    log.scrollTop=log.scrollHeight;
+  }
+  toast('🔄 Actualización: '+ok+' actualizadas · ❌ '+err+' errores',5000);
 }
 </script>
 </body>
