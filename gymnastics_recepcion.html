@@ -986,7 +986,7 @@ async function registrarCobro(){
         if(referencia)pagoData.referencia=referencia;
         await db.collection('pagos').add(pagoData);
         if (typeof rtdb !== 'undefined') {
-          try { rtdb.ref('notificaciones/' + alumnoEnCaja.id).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) { console.warn('RTDB notification failed:', e); }
+          try { const safeId = alumnoEnCaja.id.replace(/[.#$/[\]]/g,'_'); rtdb.ref('notificaciones/' + safeId).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) { console.warn('RTDB notification failed:', e); }
         }
         const resSnap=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
         await Promise.all(resSnap.docs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
@@ -1534,7 +1534,10 @@ async function cargarPagosRecientes(alumnoId) {
   const cajaPagos = $('cajaPagosRecientes');
   if (!cajaPagos) return;
   try {
-    const snap = await db.collection('pagos').where('alumnoId','==',alumnoId).orderBy('fecha','desc').limit(5).get();
+    const snap = await db.collection('pagos').where('alumnoId','==',alumnoId).orderBy('fecha','desc').limit(5).get().catch(async () => {
+      // Fallback if composite index not yet created: query without orderBy
+      return db.collection('pagos').where('alumnoId','==',alumnoId).limit(10).get();
+    });
     const fmt = n => '$' + n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
     if (snap.empty) { cajaPagos.innerHTML = '<p style="font-size:.65rem;color:var(--txt2);text-align:center;padding:.5rem">Sin pagos registrados</p>'; return; }
     cajaPagos.innerHTML = snap.docs.map(d => {
@@ -1549,6 +1552,7 @@ async function cargarPagosRecientes(alumnoId) {
 }
 
 let asistenciaTemp = {};
+let asistenciaNombres = {};
 
 async function cargarAsistenciaClase() {
   if (!claseActualID) return;
@@ -1559,10 +1563,12 @@ async function cargarAsistenciaClase() {
   const asistMap = {};
   asistSnap.docs.forEach(d => { asistMap[d.data().alumnoId] = d.data().tipo; });
   asistenciaTemp = {};
+  asistenciaNombres = {};
   if (snap.empty) { $('listaAsistencia').innerHTML = '<p style="text-align:center;font-size:.72rem;color:#94a3b8;padding:1.5rem">Sin alumnos inscritos</p>'; return; }
   snap.docs.forEach(d => {
     const aid = d.data().alumnoId;
     asistenciaTemp[aid] = asistMap[aid] || 'ausente';
+    asistenciaNombres[aid] = d.data().alumnoNombre || aid;
   });
   $('listaAsistencia').innerHTML = snap.docs.map(d => {
     const aid = d.data().alumnoId;
@@ -1597,8 +1603,7 @@ async function guardarAsistencia() {
   const clase = clasesCached.find(c => c.id === claseActualID);
   const batch = db.batch();
   for (const [aid, tipo] of Object.entries(asistenciaTemp)) {
-    const nombreEl = document.querySelector('#ar-' + aid + ' p');
-    const nombre = nombreEl ? nombreEl.textContent : aid;
+    const nombre = asistenciaNombres[aid] || aid;
     const ref = db.collection('asistencias').doc(claseActualID + '_' + fecha + '_' + aid);
     batch.set(ref, { claseId: claseActualID, claseNombre: clase?.nombre||'', alumnoId: aid, alumnoNombre: nombre, fecha, tipo, registradoEn: new Date() });
   }
