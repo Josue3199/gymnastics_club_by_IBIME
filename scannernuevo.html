@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IBIME - Control de Clases</title>
+<title>IBIME - Panel de Profesor</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -12,626 +12,916 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <style>
-body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:white}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:white;margin:0;padding:0}
 .glass{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:1.25rem}
 .view{display:none}.view.active{display:block;animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.nav-item{transition:all .2s;border-radius:.75rem;padding:.7rem 1rem;font-size:.65rem;font-weight:800;text-transform:uppercase;width:100%;text-align:left;display:flex;align-items:center;gap:.75rem;color:#94a3b8}
-.nav-item:hover{background:rgba(255,255,255,.08);color:white}
-.nav-item.active{background:#4f46e5;color:white}
-/* Scanner overlay */
-#scannerOverlay{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center}
+
+/* Login Screen */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+#loginScreen.hidden{display:none}
+.login-card{max-width:450px;width:100%}
+
+/* Responsive Sidebar */
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:280px;background:#0a0f1f;border-right:1px solid rgba(255,255,255,.05);padding:1.5rem;display:flex;flex-direction:column;z-index:100;transition:transform .3s ease}
+#sidebar.mobile-hidden{transform:translateX(-100%)}
+
+/* Main Content */
+#mainContent{margin-left:280px;padding:1.5rem;min-height:100vh;transition:margin .3s ease}
+#mainContent.full-width{margin-left:0}
+
+/* Mobile Menu Button */
+#menuToggle{display:none;position:fixed;top:1rem;left:1rem;z-index:200;background:#4f46e5;color:white;width:48px;height:48px;border-radius:12px;border:none;font-size:1.25rem;box-shadow:0 4px 12px rgba(79,70,229,.4)}
+
+/* Clase Card */
+.clase-item{cursor:pointer;transition:all .2s;border:2px solid transparent}
+.clase-item:hover{background:rgba(255,255,255,.08)}
+.clase-item.active{border-color:#6366f1;background:rgba(99,102,241,.15)}
+
+/* Scanner Overlay */
+#scannerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:1rem}
 #scannerOverlay.active{display:flex}
 #html5-qrcode-button-camera-permission,#html5-qrcode-button-camera-start,#html5-qrcode-button-camera-stop{display:none!important}
-/* Resultado acceso */
-.acceso-ok  {background:linear-gradient(135deg,#065f46,#10b981)}
-.acceso-fail{background:linear-gradient(135deg,#7f1d1d,#ef4444)}
-.acceso-pend{background:linear-gradient(135deg,#78350f,#f59e0b)}
-/* Tarjeta de clase */
-.clase-card{cursor:pointer;transition:all .2s}
-.clase-card:hover{background:rgba(255,255,255,.08)}
-.clase-card.active-clase{border-color:#6366f1;background:rgba(99,102,241,.15)}
-/* Chips de asistencia */
-.chip-presente{background:#065f46;color:#6ee7b7}
-.chip-ausente {background:#7f1d1d;color:#fca5a5}
-.chip-tard    {background:#78350f;color:#fde68a}
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);transition:transform .4s cubic-bezier(.34,1.56,.64,1);z-index:9999;background:#1e293b;color:white;padding:.75rem 1.5rem;border-radius:1rem;font-size:.7rem;font-weight:800;text-transform:uppercase;white-space:nowrap}
-#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Scan Result */
+.scan-result{animation:slideUp .4s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.resultado-ok{background:linear-gradient(135deg,#065f46,#10b981);border:2px solid #6ee7b7}
+.resultado-fail{background:linear-gradient(135deg,#7f1d1d,#ef4444);border:2px solid #fca5a5}
+
+/* Attendance Pills */
+.att-presente{background:#065f46;color:#6ee7b7;border:1px solid #6ee7b7}
+.att-ausente{background:#7f1d1d;color:#fca5a5;border:1px solid #fca5a5}
+.att-tarde{background:#78350f;color:#fde68a;border:1px solid #fde68a}
+.att-justificado{background:#1e3a8a;color:#93c5fd;border:1px solid #93c5fd}
+
+/* Toast */
+#toast{position:fixed;top:20px;right:20px;transform:translateX(400px);transition:transform .4s cubic-bezier(.34,1.56,.64,1);z-index:9999;background:#1e293b;color:white;padding:.75rem 1.5rem;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px;font-weight:700;font-size:.875rem}
+#toast.show{transform:translateX(0)}
+
+/* Responsive */
+@media (max-width:1024px){
+  #sidebar{transform:translateX(-100%)}
+  #sidebar.mobile-open{transform:translateX(0)}
+  #mainContent{margin-left:0}
+  #menuToggle{display:flex;align-items:center;justify-content:center}
+}
+@media (max-width:640px){
+  #mainContent{padding:1rem}
+  .login-card{padding:1.5rem}
+  #scannerBox{width:280px!important;height:280px!important}
+}
 </style>
 </head>
-<body class="flex min-h-screen">
+<body>
 
-<div id="toast" class="flex items-center gap-3"><span id="tIcon">✅</span><span id="tMsg"></span></div>
+<div id="toast"><span id="tIcon">✅</span><span id="tMsg"></span></div>
 
-<!-- SCANNER OVERLAY -->
-<div id="scannerOverlay">
-  <div class="text-center mb-6">
-    <p class="font-black text-xl uppercase text-white mb-1">Escanear QR</p>
-    <p id="scannerModo" class="text-slate-400 text-xs font-bold uppercase">Modo: Acceso</p>
-  </div>
-  <div id="scannerBox" class="rounded-3xl overflow-hidden" style="width:300px;height:300px"></div>
-  <div class="mt-8 grid grid-cols-2 gap-4">
-    <button onclick="cerrarScanner()" class="px-8 py-3 bg-slate-700 text-white rounded-xl font-black text-xs uppercase">Cancelar</button>
-  </div>
-  <!-- Resultado acceso -->
-  <div id="resultadoAcceso" class="hidden mt-6 w-72 rounded-2xl p-5 text-center">
-    <div class="text-5xl mb-3" id="resIcon">✅</div>
-    <p id="resNombre" class="font-black text-xl uppercase mb-1"></p>
-    <p id="resMensaje" class="text-sm font-bold opacity-80"></p>
-    <p id="resSub"    class="text-xs font-bold opacity-60 mt-1"></p>
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card glass p-8">
+    <div class="text-center mb-8">
+      <div class="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl font-black shadow-2xl shadow-indigo-900">
+        👨‍🏫
+      </div>
+      <h1 class="text-3xl font-black uppercase mb-2">Panel de Profesor</h1>
+      <p class="text-slate-400 text-sm font-bold">IBIME - Control de Clases</p>
+    </div>
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-black uppercase text-slate-400 mb-2">Selecciona tu nombre</label>
+        <select id="selectProfesor" class="w-full p-4 bg-slate-800 border-2 border-white/10 rounded-xl font-bold text-white focus:border-indigo-500 focus:outline-none transition-all">
+          <option value="">— Cargando profesores... —</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-black uppercase text-slate-400 mb-2">Código de acceso (opcional)</label>
+        <input id="inputCodigo" type="password" placeholder="****" class="w-full p-4 bg-slate-800 border-2 border-white/10 rounded-xl font-bold text-white focus:border-indigo-500 focus:outline-none transition-all">
+      </div>
+      
+      <button onclick="iniciarSesion()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-black text-lg uppercase hover:shadow-2xl hover:shadow-indigo-900 transition-all flex items-center justify-center gap-3">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        Iniciar Sesión
+      </button>
+    </div>
+    
+    <div class="mt-6 pt-6 border-t border-white/10 text-center">
+      <p class="text-xs text-slate-500 font-bold">Si no apareces en la lista, contacta al administrador</p>
+    </div>
   </div>
 </div>
 
-<!-- SIDEBAR -->
-<aside class="w-64 bg-slate-950 p-5 flex flex-col fixed h-full z-50 border-r border-white/5">
-  <div class="flex items-center gap-3 mb-8 px-1">
-    <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-sm">IB</div>
-    <span class="text-white font-black text-lg uppercase italic">Clases</span>
+<!-- ═══════════════════════════════════════════════════════════════
+     SCANNER OVERLAY
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="scannerOverlay">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-6">
+      <p class="font-black text-2xl uppercase text-white mb-2">📸 Escanear QR</p>
+      <p id="scannerClaseNombre" class="text-indigo-400 text-sm font-bold uppercase"></p>
+    </div>
+    
+    <div id="scannerBox" class="rounded-3xl overflow-hidden mx-auto shadow-2xl" style="width:320px;height:320px"></div>
+    
+    <div id="scanResult" class="hidden mt-6 rounded-2xl p-6 text-center scan-result">
+      <div class="text-6xl mb-4" id="scanIcon">✅</div>
+      <p id="scanNombre" class="font-black text-2xl uppercase mb-2"></p>
+      <p id="scanMensaje" class="text-sm font-bold opacity-90"></p>
+    </div>
+    
+    <div class="mt-6 grid grid-cols-2 gap-4">
+      <button onclick="cerrarScanner()" class="px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-black text-sm uppercase transition-all">
+        <i class="fa-solid fa-times mr-2"></i>Cancelar
+      </button>
+      <button onclick="escanearOtro()" class="px-6 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-sm uppercase transition-all">
+        <i class="fa-solid fa-qrcode mr-2"></i>Siguiente
+      </button>
+    </div>
   </div>
-  <nav class="space-y-1 flex-1">
-    <button onclick="showView('acceso',this)"   class="nav-item active"><i class="fa-solid fa-qrcode w-4 text-emerald-400"></i>Control de Acceso</button>
-    <button onclick="showView('clases',this)"   class="nav-item"><i class="fa-solid fa-layer-group w-4 text-purple-400"></i>Grupos / Clases</button>
-    <button onclick="showView('asistencia',this)" class="nav-item"><i class="fa-solid fa-clipboard-check w-4 text-amber-400"></i>Pase de Lista</button>
-    <button onclick="showView('historial',this)" class="nav-item"><i class="fa-solid fa-chart-bar w-4 text-cyan-400"></i>Estadísticas</button>
-  </nav>
-  <div class="pt-4 border-t border-white/10 text-center">
-    <p id="reloj" class="font-black text-xs text-indigo-400">00:00:00</p>
-    <p class="text-[9px] text-slate-600 font-bold mt-1 uppercase" id="fechaHoyLabel"></p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MOBILE MENU TOGGLE
+     ═══════════════════════════════════════════════════════════════ -->
+<button id="menuToggle" onclick="toggleMenu()">
+  <i class="fa-solid fa-bars"></i>
+</button>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════════════════════════════ -->
+<aside id="sidebar">
+  <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center font-black text-lg shadow-lg">👨‍🏫</div>
+      <div>
+        <p class="font-black text-sm uppercase text-white" id="nombreProfesor">Profesor</p>
+        <p class="text-xs text-slate-500 font-bold" id="fechaHoy"></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="flex-1 overflow-y-auto">
+    <p class="text-xs font-black uppercase text-slate-500 mb-3 px-2">Mis Clases de Hoy</p>
+    <div id="misClasesHoy" class="space-y-2 mb-6">
+      <div class="text-center py-8 text-slate-600">
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+        <p class="text-xs font-bold">Cargando clases...</p>
+      </div>
+    </div>
+    
+    <div class="pt-4 border-t border-white/10">
+      <button onclick="cerrarSesion()" class="w-full py-3 bg-rose-900/30 hover:bg-rose-900/50 text-rose-400 rounded-xl font-black text-xs uppercase transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Cerrar Sesión
+      </button>
+    </div>
+  </div>
+  
+  <div class="pt-4 border-t border-white/10 mt-4">
+    <div class="text-center">
+      <p id="reloj" class="font-black text-xl text-indigo-400 mb-1">00:00:00</p>
+      <p class="text-xs text-slate-600 font-bold uppercase">Hora actual</p>
+    </div>
   </div>
 </aside>
 
-<main class="flex-1 ml-64 p-6 overflow-y-auto">
-
-  <!-- CONTROL DE ACCESO -->
-  <div id="view-acceso" class="view active">
-    <h2 class="text-2xl font-black uppercase italic mb-6 text-white">Control de <span class="text-emerald-400">Acceso</span></h2>
-    <div class="grid grid-cols-3 gap-5 mb-6">
-      <div class="glass p-5 border-l-4 border-emerald-500"><p class="text-[9px] font-black text-slate-400 uppercase">Entradas Hoy</p><h3 id="statEntradas" class="text-3xl font-black text-emerald-400">0</h3></div>
-      <div class="glass p-5 border-l-4 border-amber-500"><p class="text-[9px] font-black text-slate-400 uppercase">Con Membresía</p><h3 id="statMemb" class="text-3xl font-black text-amber-400">0</h3></div>
-      <div class="glass p-5 border-l-4 border-indigo-500"><p class="text-[9px] font-black text-slate-400 uppercase">Por Pago</p><h3 id="statPago" class="text-3xl font-black text-indigo-400">0</h3></div>
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════════════════ -->
+<main id="mainContent">
+  
+  <!-- Dashboard View -->
+  <div id="view-dashboard" class="view active">
+    <div class="mb-6">
+      <h2 class="text-3xl font-black uppercase mb-2">Bienvenido, <span class="text-indigo-400" id="saludoProfesor">Profesor</span></h2>
+      <p class="text-slate-400 font-bold">Selecciona una clase del menú lateral para comenzar</p>
     </div>
-    <div class="grid grid-cols-2 gap-5">
-      <div class="glass p-6">
-        <h4 class="font-black text-xs uppercase mb-4 text-slate-300">Escanear Credencial</h4>
-        <button onclick="abrirScanner('acceso')" class="w-full py-6 bg-emerald-600 rounded-2xl font-black text-lg uppercase hover:bg-emerald-500 transition-all shadow-2xl shadow-emerald-900 flex items-center justify-center gap-3 mb-4">
-          <i class="fa-solid fa-qrcode text-2xl"></i> Activar Scanner
-        </button>
-        <div class="border-t border-white/10 pt-4">
-          <p class="text-[10px] font-black uppercase text-slate-500 mb-2">O buscar por ID</p>
-          <div class="flex gap-2">
-            <input id="accesoManualID" type="text" placeholder="ID del alumno" class="flex-1 p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white uppercase">
-            <button onclick="procesarAcceso(document.getElementById('accesoManualID').value)" class="bg-indigo-600 text-white px-4 rounded-xl font-bold text-xs uppercase hover:bg-indigo-500">OK</button>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="glass p-6 border-l-4 border-emerald-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-emerald-900/50 rounded-xl flex items-center justify-center text-2xl">✅</div>
+          <div class="text-right">
+            <p class="text-xs font-black text-slate-400 uppercase">Asistencias Hoy</p>
+            <h3 id="statAsistenciasHoy" class="text-3xl font-black text-emerald-400">0</h3>
           </div>
         </div>
       </div>
-      <div class="glass p-5">
-        <h4 class="font-black text-xs uppercase mb-3 text-slate-300">Últimas Entradas Hoy</h4>
-        <div id="listaEntradasHoy" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      
+      <div class="glass p-6 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-amber-900/50 rounded-xl flex items-center justify-center text-2xl">📚</div>
+          <div class="text-right">
+            <p class="text-xs font-black text-slate-400 uppercase">Clases Hoy</p>
+            <h3 id="statClasesHoy" class="text-3xl font-black text-amber-400">0</h3>
+          </div>
+        </div>
+      </div>
+      
+      <div class="glass p-6 border-l-4 border-purple-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-purple-900/50 rounded-xl flex items-center justify-center text-2xl">👥</div>
+          <div class="text-right">
+            <p class="text-xs font-black text-slate-400 uppercase">Total Alumnos</p>
+            <h3 id="statTotalAlumnos" class="text-3xl font-black text-purple-400">0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-8 glass p-6">
+      <h3 class="font-black text-lg uppercase mb-4 text-slate-300">📋 Instrucciones Rápidas</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex gap-3 items-start p-4 bg-white/5 rounded-xl">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 font-black">1</div>
+          <div>
+            <p class="font-black text-sm uppercase mb-1">Selecciona tu clase</p>
+            <p class="text-xs text-slate-400">Haz clic en una clase del menú lateral para ver los alumnos inscritos</p>
+          </div>
+        </div>
+        <div class="flex gap-3 items-start p-4 bg-white/5 rounded-xl">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 font-black">2</div>
+          <div>
+            <p class="font-black text-sm uppercase mb-1">Pasa lista</p>
+            <p class="text-xs text-slate-400">Usa el escáner QR o marca manualmente la asistencia de cada alumno</p>
+          </div>
+        </div>
+        <div class="flex gap-3 items-start p-4 bg-white/5 rounded-xl">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 font-black">3</div>
+          <div>
+            <p class="font-black text-sm uppercase mb-1">Agrega comentarios</p>
+            <p class="text-xs text-slate-400">Escribe observaciones generales sobre la clase en el campo de notas</p>
+          </div>
+        </div>
+        <div class="flex gap-3 items-start p-4 bg-white/5 rounded-xl">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 font-black">4</div>
+          <div>
+            <p class="font-black text-sm uppercase mb-1">Guarda la lista</p>
+            <p class="text-xs text-slate-400">Presiona "Guardar Asistencia" para registrar la lista completa</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
-  <!-- GRUPOS / CLASES -->
-  <div id="view-clases" class="view">
-    <h2 class="text-2xl font-black uppercase italic mb-6 text-white">Grupos / <span class="text-purple-400">Clases</span></h2>
-    <div class="grid grid-cols-3 gap-5">
-      <!-- Lista de clases -->
-      <div class="glass p-5">
-        <h4 class="font-black text-xs uppercase mb-3 text-slate-300">Clases Activas</h4>
-        <div id="listaClasesGrupos" class="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto"></div>
-      </div>
-      <!-- Detalle clase seleccionada -->
-      <div class="col-span-2 glass p-5">
-        <div id="claseSinSel" class="text-center py-20 text-slate-600">
-          <i class="fa-solid fa-layer-group text-5xl mb-3"></i>
-          <p class="font-black uppercase">Selecciona una clase</p>
-        </div>
-        <div id="claseDetalle" class="hidden">
-          <div class="flex justify-between items-start mb-5">
-            <div>
-              <p class="font-black text-2xl uppercase" id="cdNombre"></p>
-              <p class="text-slate-400 text-sm font-bold" id="cdHorario"></p>
-              <div class="flex gap-3 mt-2">
-                <span class="text-xs font-black px-3 py-1 bg-indigo-900 text-indigo-300 rounded-full" id="cdCupo"></span>
-                <span class="text-xs font-black px-3 py-1 bg-emerald-900 text-emerald-300 rounded-full" id="cdInscritos"></span>
-              </div>
-            </div>
-            <button onclick="abrirScanner('lista')" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-black text-xs uppercase hover:bg-purple-500 flex items-center gap-2">
-              <i class="fa-solid fa-qrcode"></i> Pasar Lista QR
-            </button>
-          </div>
-          <!-- Barra de ocupación -->
-          <div class="mb-5">
-            <div class="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-1">
-              <span>Ocupación</span><span id="cdPct"></span>
-            </div>
-            <div class="h-3 bg-slate-800 rounded-full overflow-hidden">
-              <div id="cdBarra" class="h-full rounded-full transition-all duration-500"></div>
-            </div>
-          </div>
-          <!-- Alumnos inscritos -->
-          <h5 class="font-black text-xs uppercase text-slate-400 mb-3">Alumnos Inscritos</h5>
-          <div id="listaInscritosClase" class="space-y-2 max-h-64 overflow-y-auto"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PASE DE LISTA -->
-  <div id="view-asistencia" class="view">
-    <h2 class="text-2xl font-black uppercase italic mb-6 text-white">Pase de <span class="text-amber-400">Lista</span></h2>
-    <div class="grid grid-cols-4 gap-5 mb-5">
+  
+  <!-- Clase Detail View -->
+  <div id="view-clase" class="view">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <label class="text-[10px] font-black uppercase text-slate-400 block mb-1">Clase / Grupo</label>
-        <select id="selClaseLista" onchange="cargarListaClase()" class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white">
-          <option value="">— Selecciona —</option>
-        </select>
-      </div>
-      <div>
-        <label class="text-[10px] font-black uppercase text-slate-400 block mb-1">Fecha</label>
-        <input id="fechaLista" type="date" class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white">
-      </div>
-      <div class="col-span-2 flex items-end gap-3">
-        <button onclick="abrirScanner('asistencia')" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-black text-xs uppercase hover:bg-amber-400 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-qrcode"></i>Escanear QR
+        <button onclick="volverDashboard()" class="text-indigo-400 hover:text-indigo-300 font-bold text-sm mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>Volver
         </button>
-        <button onclick="guardarAsistencia()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase hover:bg-indigo-500">
-          <i class="fa-solid fa-floppy-disk mr-1"></i>Guardar Lista
+        <h2 class="text-3xl font-black uppercase mb-1" id="claseNombre">Nombre de Clase</h2>
+        <p class="text-slate-400 font-bold" id="claseHorario">00:00 - 00:00</p>
+        <div class="flex gap-3 mt-2">
+          <span class="text-xs font-black px-3 py-1 bg-indigo-900 text-indigo-300 rounded-full" id="claseCupo">Cupo: 0</span>
+          <span class="text-xs font-black px-3 py-1 bg-emerald-900 text-emerald-300 rounded-full" id="claseInscritos">Inscritos: 0</span>
+        </div>
+      </div>
+      
+      <div class="flex gap-3">
+        <button onclick="abrirScanner()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-black text-sm uppercase hover:shadow-2xl hover:shadow-purple-900 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-lg"></i>
+          Escanear QR
+        </button>
+        <button onclick="guardarAsistenciaCompleta()" class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black text-sm uppercase hover:shadow-2xl hover:shadow-emerald-900 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i>
+          Guardar Lista
         </button>
       </div>
     </div>
-    <div id="tablaAsistencia" class="glass p-4">
-      <div id="asistPlaceholder" class="text-center py-12 text-slate-600"><i class="fa-solid fa-clipboard-check text-5xl mb-3"></i><p class="font-black uppercase">Selecciona una clase y fecha</p></div>
-      <div id="asistContenido" class="hidden">
+    
+    <!-- Barra de progreso -->
+    <div class="glass p-5 mb-6">
+      <div class="flex justify-between text-xs font-black uppercase text-slate-400 mb-2">
+        <span>Ocupación de la clase</span>
+        <span id="clasePorcentaje">0%</span>
+      </div>
+      <div class="h-4 bg-slate-800 rounded-full overflow-hidden">
+        <div id="claseBarra" class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+      </div>
+    </div>
+    
+    <!-- Resumen de asistencia -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="glass p-4 text-center">
+        <p class="text-2xl font-black text-emerald-400" id="countPresente">0</p>
+        <p class="text-xs font-bold text-slate-400 uppercase mt-1">✅ Presentes</p>
+      </div>
+      <div class="glass p-4 text-center">
+        <p class="text-2xl font-black text-rose-400" id="countAusente">0</p>
+        <p class="text-xs font-bold text-slate-400 uppercase mt-1">❌ Ausentes</p>
+      </div>
+      <div class="glass p-4 text-center">
+        <p class="text-2xl font-black text-amber-400" id="countTarde">0</p>
+        <p class="text-xs font-bold text-slate-400 uppercase mt-1">⏰ Tarde</p>
+      </div>
+      <div class="glass p-4 text-center">
+        <p class="text-2xl font-black text-blue-400" id="countJustificado">0</p>
+        <p class="text-xs font-bold text-slate-400 uppercase mt-1">📝 Justificado</p>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Lista de alumnos -->
+      <div class="lg:col-span-2 glass p-5">
         <div class="flex justify-between items-center mb-4">
-          <div>
-            <p id="asistNombreClase" class="font-black uppercase"></p>
-            <div class="flex gap-4 mt-1 text-xs font-black">
-              <span class="text-emerald-400">✅ Presentes: <span id="cntPresente">0</span></span>
-              <span class="text-rose-400">❌ Ausentes: <span id="cntAusente">0</span></span>
-              <span class="text-amber-400">⏰ Tarde: <span id="cntTarde">0</span></span>
-            </div>
-          </div>
-          <button onclick="marcarTodos('presente')" class="bg-emerald-900 text-emerald-300 px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-emerald-800">✅ Todos Presentes</button>
-        </div>
-        <div id="filaAsistencia" class="space-y-2 max-h-96 overflow-y-auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ESTADÍSTICAS -->
-  <div id="view-historial" class="view">
-    <h2 class="text-2xl font-black uppercase italic mb-6 text-white">Estadísticas y <span class="text-cyan-400">Reportes</span></h2>
-    <div class="grid grid-cols-2 gap-5 mb-5">
-      <div class="glass p-5">
-        <h4 class="font-black text-xs uppercase mb-4 text-slate-300">Mover Alumno de Grupo</h4>
-        <div class="space-y-3">
-          <div>
-            <label class="text-[10px] font-black uppercase text-slate-400 block mb-1">Alumno (ID o nombre)</label>
-            <div class="flex gap-2">
-              <input id="moverAlumnoID" type="text" class="flex-1 p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white uppercase">
-              <button onclick="buscarAlumnoMover()" class="bg-indigo-600 text-white px-4 rounded-xl font-bold text-xs uppercase">Buscar</button>
-            </div>
-            <p id="moverAlumnoInfo" class="text-[10px] text-indigo-400 font-bold mt-1"></p>
-          </div>
-          <div>
-            <label class="text-[10px] font-black uppercase text-slate-400 block mb-1">Clase Origen (actual)</label>
-            <select id="moverOrigen" class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white"></select>
-          </div>
-          <div>
-            <label class="text-[10px] font-black uppercase text-slate-400 block mb-1">Clase Destino (nueva)</label>
-            <select id="moverDestino" class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-bold text-sm text-white"></select>
-          </div>
-          <button onclick="moverAlumnoGrupo()" class="w-full py-3 bg-purple-600 text-white rounded-xl font-black text-xs uppercase hover:bg-purple-500">
-            <i class="fa-solid fa-right-left mr-2"></i>Mover al Nuevo Grupo
+          <h3 class="font-black text-lg uppercase text-slate-300">Lista de Alumnos</h3>
+          <button onclick="marcarTodos('presente')" class="px-4 py-2 bg-emerald-900 hover:bg-emerald-800 text-emerald-300 rounded-lg text-xs font-black uppercase transition-all">
+            ✅ Todos Presentes
           </button>
         </div>
+        
+        <div id="listaAlumnos" class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+          <div class="text-center py-12 text-slate-600">
+            <i class="fa-solid fa-users text-5xl mb-3"></i>
+            <p class="font-black uppercase">Selecciona una clase</p>
+          </div>
+        </div>
       </div>
+      
+      <!-- Comentarios de clase -->
       <div class="glass p-5">
-        <h4 class="font-black text-xs uppercase mb-4 text-slate-300">Asistencia por Clase (últimos 7 días)</h4>
-        <div id="statsClases" class="space-y-3"></div>
+        <h3 class="font-black text-lg uppercase text-slate-300 mb-4">📝 Notas y Comentarios</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 block mb-2">Observaciones Generales</label>
+            <textarea id="comentarioGeneral" rows="4" placeholder="Ej: Excelente participación grupal, trabajamos en técnica de..." class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-medium text-sm text-white focus:border-indigo-500 focus:outline-none resize-none"></textarea>
+          </div>
+          
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 block mb-2">Temas Cubiertos</label>
+            <textarea id="temasCubiertos" rows="3" placeholder="Ej: Calentamiento, ejercicios de flexibilidad..." class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-medium text-sm text-white focus:border-indigo-500 focus:outline-none resize-none"></textarea>
+          </div>
+          
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 block mb-2">Incidencias</label>
+            <textarea id="incidencias" rows="3" placeholder="Ej: Sin incidencias / Equipo X necesita mantenimiento..." class="w-full p-3 bg-slate-800 border border-white/10 rounded-xl font-medium text-sm text-white focus:border-indigo-500 focus:outline-none resize-none"></textarea>
+          </div>
+          
+          <button onclick="guardarComentarios()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs uppercase transition-all">
+            <i class="fa-solid fa-save mr-2"></i>Guardar Comentarios
+          </button>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-white/10">
+          <p class="text-xs font-black uppercase text-slate-500 mb-3">Historial de Comentarios</p>
+          <div id="historialComentarios" class="space-y-2 max-h-48 overflow-y-auto">
+            <p class="text-xs text-slate-600 text-center py-4">Sin comentarios previos</p>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="glass p-5">
-      <h4 class="font-black text-xs uppercase mb-4 text-slate-300">Historial de Asistencias</h4>
-      <div class="flex gap-3 mb-4">
-        <select id="filtroClaseStat" onchange="cargarHistorialAsist()" class="p-2.5 bg-slate-800 border border-white/10 rounded-xl font-bold text-xs text-white">
-          <option value="">Todas las clases</option>
-        </select>
-        <input id="filtroFechaStat" type="date" onchange="cargarHistorialAsist()" class="p-2.5 bg-slate-800 border border-white/10 rounded-xl font-bold text-xs text-white">
-      </div>
-      <div id="tablaHistorialAsist" class="space-y-2 max-h-72 overflow-y-auto"></div>
     </div>
   </div>
-
+  
 </main>
 
 <script>
-const FIREBASE_CONFIG={apiKey:"AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",authDomain:"gymnastics-club-by-ibime.firebaseapp.com",databaseURL:"https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",projectId:"gymnastics-club-by-ibime",appId:"1:849277925066:web:6ef91b240277fe24846633"};
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",
+  authDomain:"gymnastics-club-by-ibime.firebaseapp.com",
+  databaseURL:"https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",
+  projectId:"gymnastics-club-by-ibime",
+  storageBucket:"gymnastics-club-by-ibime.firebasestorage.app",
+  messagingSenderId:"690587849706",
+  appId:"1:690587849706:web:54f1d4df98d47c80affc62"
+};
 firebase.initializeApp(FIREBASE_CONFIG);
 const db=firebase.firestore(),rtdb=firebase.database();
 
-let scanner=null,modoScanner='acceso',claseActiva=null,clasesCatalogo=[],asistenciaActual={},alumnoMoverInfo=null;
+// ══════════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════════════════════
+let profesorActual=null;
+let claseActualId=null;
+let claseActualData=null;
+let asistenciaMap={};
+let scanner=null;
 const hoy=new Date().toISOString().split('T')[0];
 
-// ── TOAST ────────────────────────────────────────────────────────
-function toast(m,i='✅',ms=3000){
-    document.getElementById('tMsg').innerText=m;document.getElementById('tIcon').innerText=i;
-    const el=document.getElementById('toast');el.classList.add('show');
-    setTimeout(()=>el.classList.remove('show'),ms);
-}
-// ── RELOJ ───────────────────────────────────────────────────────
-setInterval(()=>document.getElementById('reloj').innerText=new Date().toLocaleTimeString('es-MX'),1000);
-document.getElementById('fechaHoyLabel').innerText=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
-
-// ── NAV ─────────────────────────────────────────────────────────
-function showView(id,btn){
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    document.getElementById('view-'+id).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-    if(btn)btn.classList.add('active');
-    if(id==='historial')cargarStatsClases();
-    if(id==='asistencia')cargarSelectClases();
+// ══════════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════════
+function toast(msg,icon='✅',ms=3000){
+  document.getElementById('tMsg').innerText=msg;
+  document.getElementById('tIcon').innerText=icon;
+  const el=document.getElementById('toast');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),ms);
 }
 
-// ── CATÁLOGO DE CLASES (tiempo real) ────────────────────────────
-db.collection('catalogo').where('tipo','==','clase').onSnapshot(snap=>{
-    clasesCatalogo=snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderClasesGrupos();
-    poblarSelectsClases();
+function toggleMenu(){
+  const sidebar=document.getElementById('sidebar');
+  sidebar.classList.toggle('mobile-open');
+}
+
+function hideMenuOnMobile(){
+  if(window.innerWidth<=1024){
+    document.getElementById('sidebar').classList.remove('mobile-open');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RELOJ
+// ══════════════════════════════════════════════════════════════════
+setInterval(()=>{
+  document.getElementById('reloj').innerText=new Date().toLocaleTimeString('es-MX');
+},1000);
+
+document.getElementById('fechaHoy').innerText=new Date().toLocaleDateString('es-MX',{
+  weekday:'long',day:'numeric',month:'long'
 });
 
-function renderClasesGrupos(){
-    const l=document.getElementById('listaClasesGrupos');
-    l.innerHTML=clasesCatalogo.length===0?'<p class="text-slate-600 text-xs font-black uppercase text-center py-8">Sin clases</p>':
-    clasesCatalogo.map(c=>{
-        const disp=c.cupoDisponible??c.cupo??0;
-        const tot=c.cupo??30;
-        const pct=Math.max(0,Math.min(100,(disp/tot)*100));
-        const col=pct>50?'bg-emerald-500':pct>20?'bg-amber-500':'bg-rose-500';
-        return`<div onclick="seleccionarClase('${c.id}')" class="clase-card glass p-3 border border-white/5 ${claseActiva?.id===c.id?'active-clase':''}">
-            <div class="flex items-center gap-2 mb-2">
-                <span class="text-xl">${c.icon||'🏋️'}</span>
-                <div><p class="font-black text-xs uppercase text-white">${c.nombre}</p>
-                <p class="text-[9px] text-slate-400 font-bold">${c.inicio||'--'}–${c.fin||'--'}</p></div>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden"><div class="${col} h-full rounded-full" style="width:${100-pct}%"></div></div>
-                <p class="text-[9px] font-black text-slate-400">${tot-disp}/${tot}</p>
-            </div>
-        </div>`;
+// ══════════════════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',async()=>{
+  // Cargar lista de profesores
+  try{
+    const snap=await db.collection('profesores').get();
+    const sel=document.getElementById('selectProfesor');
+    if(snap.empty){
+      sel.innerHTML='<option value="">— No hay profesores registrados —</option>';
+      return;
+    }
+    sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+snap.docs.map(d=>`<option value="${d.id}">${d.data().nombre||d.id}</option>`).join('');
+  }catch(e){
+    toast('Error al cargar profesores: '+e.message,'❌');
+  }
+});
+
+async function iniciarSesion(){
+  const profesorId=document.getElementById('selectProfesor').value;
+  if(!profesorId){toast('Selecciona tu nombre','⚠️');return;}
+  
+  try{
+    const doc=await db.collection('profesores').doc(profesorId).get();
+    if(!doc.exists){toast('Profesor no encontrado','❌');return;}
+    
+    profesorActual={id:doc.id,...doc.data()};
+    document.getElementById('nombreProfesor').innerText=profesorActual.nombre||profesorActual.id;
+    document.getElementById('saludoProfesor').innerText=profesorActual.nombre?.split(' ')[0]||'Profesor';
+    
+    document.getElementById('loginScreen').classList.add('hidden');
+    toast('Bienvenido '+profesorActual.nombre,'👋',2000);
+    
+    cargarClasesDelProfesor();
+    actualizarEstadisticas();
+  }catch(e){
+    toast('Error: '+e.message,'❌');
+  }
+}
+
+function cerrarSesion(){
+  if(!confirm('¿Cerrar sesión?'))return;
+  profesorActual=null;
+  claseActualId=null;
+  claseActualData=null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('misClasesHoy').innerHTML='<div class="text-center py-8 text-slate-600"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p class="text-xs font-bold">Cargando clases...</p></div>';
+  mostrarVista('dashboard');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CARGAR CLASES DEL PROFESOR
+// ══════════════════════════════════════════════════════════════════
+async function cargarClasesDelProfesor(){
+  if(!profesorActual)return;
+  
+  try{
+    // Buscar en colección "catalogo" las clases asignadas al profesor
+    const snap=await db.collection('catalogo')
+      .where('tipo','==','clase')
+      .where('profesorId','==',profesorActual.id)
+      .get();
+    
+    const contenedor=document.getElementById('misClasesHoy');
+    
+    if(snap.empty){
+      contenedor.innerHTML=`<div class="text-center py-8 text-slate-600">
+        <i class="fa-solid fa-calendar-xmark text-3xl mb-2"></i>
+        <p class="text-xs font-bold uppercase">No tienes clases asignadas hoy</p>
+      </div>`;
+      return;
+    }
+    
+    const clases=snap.docs.map(d=>({id:d.id,...d.data()}));
+    
+    contenedor.innerHTML=clases.map(clase=>{
+      const cupo=clase.cupo||30;
+      const disp=clase.cupoDisponible??cupo;
+      const inscritos=cupo-disp;
+      
+      return `<div onclick="seleccionarClase('${clase.id}')" class="clase-item glass p-4 rounded-xl border-2 ${claseActualId===clase.id?'active':'border-transparent'}">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="text-3xl">${clase.icon||'🏋️'}</div>
+          <div class="flex-1">
+            <p class="font-black text-sm uppercase text-white">${clase.nombre}</p>
+            <p class="text-xs text-slate-400 font-bold">${clase.inicio||'--'} — ${clase.fin||'--'}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mb-2">
+          <div class="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all" style="width:${(inscritos/cupo)*100}%"></div>
+          </div>
+        </div>
+        <div class="flex justify-between text-xs font-bold">
+          <span class="text-slate-400">${inscritos}/${cupo} alumnos</span>
+          <span class="text-indigo-400"><i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </div>`;
     }).join('');
+    
+    document.getElementById('statClasesHoy').innerText=clases.length;
+    
+  }catch(e){
+    toast('Error al cargar clases: '+e.message,'❌');
+  }
 }
 
-async function seleccionarClase(id){
-    claseActiva=clasesCatalogo.find(c=>c.id===id);if(!claseActiva)return;
-    renderClasesGrupos();
-    document.getElementById('claseSinSel').classList.add('hidden');
-    document.getElementById('claseDetalle').classList.remove('hidden');
-    document.getElementById('cdNombre').innerText=claseActiva.nombre;
-    document.getElementById('cdHorario').innerText=(claseActiva.inicio||'--')+' – '+(claseActiva.fin||'--');
-    const tot=claseActiva.cupo||30;
-    const disp=claseActiva.cupoDisponible??tot;
-    const ins=tot-disp;
-    document.getElementById('cdCupo').innerText='Cupo: '+tot;
-    document.getElementById('cdInscritos').innerText='Inscritos: '+ins;
-    const pct=Math.round((ins/tot)*100);
-    document.getElementById('cdPct').innerText=pct+'%';
-    const col=pct<70?'#10b981':pct<90?'#f59e0b':'#ef4444';
-    document.getElementById('cdBarra').style.cssText='width:'+pct+'%;background:'+col;
-    // Cargar alumnos inscritos (de reservas confirmadas)
-    const snap=await db.collection('reservas').where('claseId','==',id).where('estado','==','confirmada').get();
-    const l=document.getElementById('listaInscritosClase');
-    if(snap.empty){l.innerHTML='<p class="text-slate-600 text-xs font-black uppercase text-center py-6">Sin alumnos confirmados aún</p>';return;}
-    l.innerHTML=snap.docs.map(d=>{const r=d.data();return`<div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-indigo-700 rounded-xl flex items-center justify-center font-black text-xs">${r.alumnoNombre?.charAt(0)||'?'}</div>
-            <div><p class="font-black text-xs uppercase text-white">${r.alumnoNombre||r.alumnoId}</p>
-            <p class="text-[9px] text-slate-400 font-mono">${r.alumnoId}</p></div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="moverAlumnoDirecto('${r.alumnoId}','${id}')" class="text-purple-400 hover:text-purple-300 text-xs" title="Mover de grupo"><i class="fa-solid fa-right-left"></i></button>
-            <button onclick="quitarDeClase('${d.id}','${id}')" class="text-rose-400 hover:text-rose-300 text-xs" title="Quitar de clase"><i class="fa-solid fa-user-minus"></i></button>
-        </div>
-    </div>`;}).join('');
+// ══════════════════════════════════════════════════════════════════
+// SELECCIONAR CLASE
+// ══════════════════════════════════════════════════════════════════
+async function seleccionarClase(claseId){
+  claseActualId=claseId;
+  hideMenuOnMobile();
+  
+  try{
+    const doc=await db.collection('catalogo').doc(claseId).get();
+    if(!doc.exists){toast('Clase no encontrada','❌');return;}
+    
+    claseActualData={id:doc.id,...doc.data()};
+    
+    document.getElementById('claseNombre').innerText=claseActualData.nombre;
+    document.getElementById('claseHorario').innerText=(claseActualData.inicio||'--')+' — '+(claseActualData.fin||'--');
+    
+    const cupo=claseActualData.cupo||30;
+    const disp=claseActualData.cupoDisponible??cupo;
+    const inscritos=cupo-disp;
+    
+    document.getElementById('claseCupo').innerText='Cupo: '+cupo;
+    document.getElementById('claseInscritos').innerText='Inscritos: '+inscritos;
+    
+    const pct=Math.round((inscritos/cupo)*100);
+    document.getElementById('clasePorcentaje').innerText=pct+'%';
+    document.getElementById('claseBarra').style.width=pct+'%';
+    
+    // Cargar alumnos inscritos
+    await cargarAlumnosInscritos(claseId);
+    
+    // Cargar comentarios previos
+    await cargarComentariosPrevios(claseId);
+    
+    mostrarVista('clase');
+    cargarClasesDelProfesor(); // refresh sidebar
+    
+  }catch(e){
+    toast('Error: '+e.message,'❌');
+  }
 }
 
-async function quitarDeClase(reservaId,claseId){
-    if(!confirm('¿Quitar al alumno de esta clase? Se liberará su lugar.'))return;
-    try{
-        await db.collection('catalogo').doc(claseId).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
-        await db.collection('reservas').doc(reservaId).delete();
-        toast('Alumno removido de la clase','🗑️');
-        seleccionarClase(claseId);
-    }catch(e){toast('Error: '+e.message,'❌');}
-}
-
-// ── PASE DE LISTA ─────────────────────────────────────────────────
-function poblarSelectsClases(){
-    ['selClaseLista','moverOrigen','moverDestino','filtroClaseStat'].forEach(sid=>{
-        const sel=document.getElementById(sid); if(!sel)return;
-        const val=sel.value;
-        sel.innerHTML=(sid==='filtroClaseStat'?'<option value="">Todas las clases</option>':'<option value="">— Selecciona —</option>')+
-            clasesCatalogo.map(c=>`<option value="${c.id}">${c.nombre} (${c.inicio||'--'}–${c.fin||'--'})</option>`).join('');
-        if(val)sel.value=val;
-    });
-    document.getElementById('fechaLista').value=hoy;
-}
-function cargarSelectClases(){poblarSelectsClases();}
-
-async function cargarListaClase(){
-    const claseId=document.getElementById('selClaseLista').value;
-    const fecha  =document.getElementById('fechaLista').value||hoy;
-    if(!claseId){document.getElementById('asistPlaceholder').classList.remove('hidden');document.getElementById('asistContenido').classList.add('hidden');return;}
-    // Cargar alumnos con reserva confirmada
-    const snap=await db.collection('reservas').where('claseId','==',claseId).where('estado','==','confirmada').get();
-    // Cargar pre-reservas pendientes de pago
-    const preSnap=await db.collection('reservas').where('claseId','==',claseId).where('estado','==','pre-reserva').get();
-    const clase=clasesCatalogo.find(c=>c.id===claseId);
-    document.getElementById('asistNombreClase').innerText=(clase?.nombre||'Clase')+' — '+fecha;
-    // Cargar asistencias ya guardadas para esta fecha/clase
-    const asistSnap=await db.collection('asistencias').where('claseId','==',claseId).where('fecha','==',fecha).get();
+async function cargarAlumnosInscritos(claseId){
+  try{
+    const snap=await db.collection('reservas')
+      .where('claseId','==',claseId)
+      .where('estado','==','confirmada')
+      .get();
+    
+    // Cargar asistencias ya guardadas
+    const asistSnap=await db.collection('asistencias')
+      .where('claseId','==',claseId)
+      .where('fecha','==',hoy)
+      .get();
+    
     const asistMap={};
-    asistSnap.docs.forEach(d=>{asistMap[d.data().alumnoId]=d.data().tipo;});
-    asistenciaActual={};
-    document.getElementById('asistPlaceholder').classList.add('hidden');
-    document.getElementById('asistContenido').classList.remove('hidden');
-    if(snap.empty&&preSnap.empty){document.getElementById('filaAsistencia').innerHTML='<p class="text-slate-600 text-xs font-black uppercase text-center py-6">Sin alumnos inscritos en esta clase</p>';actualizarContadores();return;}
-    snap.docs.forEach(d=>{asistenciaActual[d.data().alumnoId]={nombre:d.data().alumnoNombre||d.data().alumnoId,estado:asistMap[d.data().alumnoId]||'ausente',pendiente:false};});
-    // Pre-reservas: van al mapa con flag pendiente=true (no pueden pasar lista)
-    preSnap.docs.forEach(d=>{
-        const aid=d.data().alumnoId;
-        if(!asistenciaActual[aid]) // no sobreescribir si ya tiene confirmada
-            asistenciaActual[aid]={nombre:d.data().alumnoNombre||aid,estado:'pendiente',pendiente:true};
+    asistSnap.docs.forEach(d=>{
+      asistMap[d.data().alumnoId]=d.data().tipo||'presente';
     });
-    renderFilaAsistencia();
-}
-
-function renderFilaAsistencia(){
-    const f=document.getElementById('filaAsistencia');
-    // Separar confirmados vs pendientes de pago
-    const confirmados=Object.entries(asistenciaActual).filter(([,i])=>!i.pendiente);
-    const pendientes=Object.entries(asistenciaActual).filter(([,i])=>i.pendiente);
-    let html='';
-    if(confirmados.length){
-        html+=confirmados.map(([id,info])=>`<div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center font-black text-xs">${info.nombre?.charAt(0)||'?'}</div>
-            <div><p class="font-black text-xs uppercase text-white">${info.nombre}</p><p class="text-[9px] text-slate-500 font-mono">${id}</p></div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="setAsist('${id}','presente')" class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${info.estado==='presente'?'bg-emerald-500 text-white':'bg-white/10 text-slate-400 hover:bg-white/20'}">✅ Sí</button>
-            <button onclick="setAsist('${id}','ausente')" class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${info.estado==='ausente'?'bg-red-500 text-white':'bg-white/10 text-slate-400 hover:bg-white/20'}">❌ No</button>
-            <button onclick="setAsist('${id}','justificado')" class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${info.estado==='justificado'?'bg-amber-500 text-white':'bg-white/10 text-slate-400 hover:bg-white/20'}">📋 Just</button>
-        </div>
-        </div>`).join('');
+    
+    asistenciaMap={};
+    
+    const lista=document.getElementById('listaAlumnos');
+    
+    if(snap.empty){
+      lista.innerHTML=`<div class="text-center py-12 text-slate-600">
+        <i class="fa-solid fa-user-slash text-5xl mb-3"></i>
+        <p class="font-black uppercase">Sin alumnos inscritos</p>
+      </div>`;
+      actualizarContadores();
+      return;
     }
-    if(pendientes.length){
-        html+=`<div class="mt-3 mb-1 px-2"><p class="text-[9px] font-black uppercase text-amber-400 tracking-widest">⚠️ Pendientes de pago — no pueden pasar lista</p></div>`;
-        html+=pendientes.map(([id,info])=>`<div class="flex justify-between items-center p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 opacity-70">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-amber-900/40 rounded-xl flex items-center justify-center font-black text-xs text-amber-400">!</div>
-            <div>
-                <p class="font-black text-xs uppercase text-amber-200">${info.nombre}</p>
-                <p class="text-[9px] text-amber-500 font-mono">${id} · Sin pago confirmado</p>
-            </div>
-        </div>
-        <span class="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">💳 Pendiente</span>
-        </div>`).join('');
-    }
-    f.innerHTML=html||'<p class="text-slate-600 text-xs font-black uppercase text-center py-6">Sin alumnos</p>';
+    
+    snap.docs.forEach(d=>{
+      const r=d.data();
+      asistenciaMap[r.alumnoId]={
+        nombre:r.alumnoNombre||r.alumnoId,
+        estado:asistMap[r.alumnoId]||'ausente'
+      };
+    });
+    
+    renderListaAlumnos();
     actualizarContadores();
+    
+  }catch(e){
+    toast('Error al cargar alumnos: '+e.message,'❌');
+  }
 }
-function setAsist(id,estado){
-    if(asistenciaActual[id]?.pendiente){toast('⚠️ Alumno sin pago confirmado');return;}if(asistenciaActual[id])asistenciaActual[id].estado=estado;renderFilaAsistencia();}
-function marcarTodos(estado){Object.keys(asistenciaActual).forEach(id=>asistenciaActual[id].estado=estado);renderFilaAsistencia();}
+
+function renderListaAlumnos(){
+  const lista=document.getElementById('listaAlumnos');
+  
+  lista.innerHTML=Object.entries(asistenciaMap).map(([alumnoId,info])=>{
+    const inicial=info.nombre?.charAt(0)||'?';
+    const estado=info.estado||'ausente';
+    
+    return `<div class="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center font-black text-lg shadow-lg">
+          ${inicial}
+        </div>
+        <div>
+          <p class="font-black text-sm uppercase text-white">${info.nombre}</p>
+          <p class="text-xs text-slate-500 font-mono">${alumnoId}</p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2">
+        <button onclick="marcarAsistencia('${alumnoId}','presente')" 
+          class="px-3 py-2 rounded-lg text-xs font-black uppercase transition-all ${estado==='presente'?'att-presente':'bg-white/5 text-slate-400 hover:bg-emerald-900/30'}">
+          ✅
+        </button>
+        <button onclick="marcarAsistencia('${alumnoId}','ausente')" 
+          class="px-3 py-2 rounded-lg text-xs font-black uppercase transition-all ${estado==='ausente'?'att-ausente':'bg-white/5 text-slate-400 hover:bg-rose-900/30'}">
+          ❌
+        </button>
+        <button onclick="marcarAsistencia('${alumnoId}','tarde')" 
+          class="px-3 py-2 rounded-lg text-xs font-black uppercase transition-all ${estado==='tarde'?'att-tarde':'bg-white/5 text-slate-400 hover:bg-amber-900/30'}">
+          ⏰
+        </button>
+        <button onclick="marcarAsistencia('${alumnoId}','justificado')" 
+          class="px-3 py-2 rounded-lg text-xs font-black uppercase transition-all ${estado==='justificado'?'att-justificado':'bg-white/5 text-slate-400 hover:bg-blue-900/30'}">
+          📝
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function marcarAsistencia(alumnoId,estado){
+  if(asistenciaMap[alumnoId]){
+    asistenciaMap[alumnoId].estado=estado;
+    renderListaAlumnos();
+    actualizarContadores();
+  }
+}
+
+function marcarTodos(estado){
+  Object.keys(asistenciaMap).forEach(id=>{
+    asistenciaMap[id].estado=estado;
+  });
+  renderListaAlumnos();
+  actualizarContadores();
+  toast('Todos marcados como: '+estado,'✅');
+}
+
 function actualizarContadores(){
-    const vals=Object.values(asistenciaActual);
-    document.getElementById('cntPresente').innerText=vals.filter(v=>v.estado==='presente').length;
-    document.getElementById('cntAusente').innerText =vals.filter(v=>v.estado==='ausente').length;
-    document.getElementById('cntTarde').innerText   =vals.filter(v=>v.estado==='tarde').length;
-}
-async function guardarAsistencia(){
-    const claseId=document.getElementById('selClaseLista').value;
-    const fecha  =document.getElementById('fechaLista').value||hoy;
-    if(!claseId){toast('Selecciona una clase','⚠️');return;}
-    const clase=clasesCatalogo.find(c=>c.id===claseId);
-    try{
-        const batch=db.batch();
-        // Eliminar registros anteriores de esta fecha/clase
-        const prev=await db.collection('asistencias').where('claseId','==',claseId).where('fecha','==',fecha).get();
-        prev.docs.forEach(d=>batch.delete(d.ref));
-        // Agregar nuevos
-        Object.entries(asistenciaActual).forEach(([alumnoId,info])=>{
-            const ref=db.collection('asistencias').doc();
-            batch.set(ref,{alumnoId,alumnoNombre:info.nombre,claseId,claseNombre:clase?.nombre||'',fecha,tipo:info.estado,timestamp:Date.now()});
-        });
-        await batch.commit();
-        toast('Lista guardada ✅','📋',3000);
-    }catch(e){toast('Error: '+e.message,'❌');}
+  const vals=Object.values(asistenciaMap);
+  document.getElementById('countPresente').innerText=vals.filter(v=>v.estado==='presente').length;
+  document.getElementById('countAusente').innerText=vals.filter(v=>v.estado==='ausente').length;
+  document.getElementById('countTarde').innerText=vals.filter(v=>v.estado==='tarde').length;
+  document.getElementById('countJustificado').innerText=vals.filter(v=>v.estado==='justificado').length;
 }
 
-// ── CONTROL DE ACCESO ─────────────────────────────────────────────
-async function procesarAcceso(rawID){
-    const id=String(rawID||'').split('|')[0].trim().toUpperCase();if(!id)return;
-    try{
-        const snap=await db.collection('alumnos').doc(id).get();
-        if(!snap.exists){mostrarResultadoAcceso('fail','ID no encontrado',id,'Matrícula inválida');return;}
-        const data=snap.data();
-        // ── Bloquear si INACTIVO ─────────────────────────────────────
-        if(data.estatus==='INACTIVO'){
-            mostrarResultadoAcceso('fail',data.nombre||id,'Acceso Denegado','Inscripción no pagada — pasar a recepción');
-            return;
-        }
-        // ── Membresía vencida ─────────────────────────────────────
-        const vf=data.vencimiento?new Date(data.vencimiento):new Date(0);
-        if(vf<new Date()){
-            mostrarResultadoAcceso('fail',data.nombre||id,'Membresía Vencida','Requiere renovación en recepción');
-            return;
-        }
-        // ── Orden pendiente en RTDB ───────────────────────────────
-        const rtSnap=await rtdb.ref('estatus_acceso/'+id).get();
-        const orden=rtSnap.val();
-        const tipo=(orden&&orden.monto>0)?'pago':'membresia';
-        // Registrar asistencia
-        await db.collection('asistencias').add({alumnoId:id,alumnoNombre:data.nombre||id,fecha:hoy,hora:new Date().toLocaleTimeString('es-MX'),tipo,timestamp:Date.now()});
-        if(tipo==='pago') mostrarResultadoAcceso('pend',data.nombre||id,'Acceso Válido — Orden Pendiente','Pagar en recepción');
-        else mostrarResultadoAcceso('ok',data.nombre||id,'Acceso Concedido',data.nivel||'');
-        actualizarStatsAcceso();
-    }catch(e){mostrarResultadoAcceso('fail','Error',e.message,'');}
+// ══════════════════════════════════════════════════════════════════
+// GUARDAR ASISTENCIA
+// ══════════════════════════════════════════════════════════════════
+async function guardarAsistenciaCompleta(){
+  if(!claseActualId || !claseActualData){
+    toast('Selecciona una clase primero','⚠️');
+    return;
+  }
+  
+  if(!confirm('¿Guardar la lista de asistencia?'))return;
+  
+  try{
+    const batch=db.batch();
+    
+    // Eliminar registros anteriores
+    const prev=await db.collection('asistencias')
+      .where('claseId','==',claseActualId)
+      .where('fecha','==',hoy)
+      .get();
+    
+    prev.docs.forEach(d=>batch.delete(d.ref));
+    
+    // Crear nuevos registros
+    Object.entries(asistenciaMap).forEach(([alumnoId,info])=>{
+      const ref=db.collection('asistencias').doc();
+      batch.set(ref,{  
+        alumnoId,
+        alumnoNombre:info.nombre,
+        claseId:claseActualId,
+        claseNombre:claseActualData.nombre,
+        profesorId:profesorActual.id,
+        profesorNombre:profesorActual.nombre,
+        fecha:hoy,
+        hora:new Date().toLocaleTimeString('es-MX'),
+        tipo:info.estado,
+        timestamp:Date.now()
+      });
+    });
+    
+    await batch.commit();
+    toast('Lista guardada exitosamente ✅','📋',3000);
+    actualizarEstadisticas();
+    
+  }catch(e){
+    toast('Error al guardar: '+e.message,'❌');
+  }
 }
-function mostrarResultadoAcceso(tipo,nombre,msg,sub){
-    const el=document.getElementById('resultadoAcceso');
-    const clases={ok:'acceso-ok',fail:'acceso-fail',pend:'acceso-pend'};
-    el.className=clases[tipo]+' mt-6 w-72 rounded-2xl p-5 text-center';
-    el.classList.remove('hidden');
-    document.getElementById('resIcon').innerText=tipo==='ok'?'✅':tipo==='pend'?'⏳':'❌';
-    document.getElementById('resNombre').innerText=nombre;
-    document.getElementById('resMensaje').innerText=msg;
-    document.getElementById('resSub').innerText=sub;
-    hablarAcceso(tipo,nombre);
-    if(tipo==='ok'||tipo==='pend') setTimeout(()=>{el.classList.add('hidden');cerrarScanner();},3000);
-}
-function hablarAcceso(tipo,nombre){
-    if(!window.speechSynthesis)return;
-    const msgs={ok:'Acceso concedido. Bienvenido '+nombre,fail:'Acceso denegado',pend:'Acceso válido. Orden pendiente de pago'};
-    const u=new SpeechSynthesisUtterance(msgs[tipo]||'');
-    u.lang='es-MX';u.volume=1;u.rate=1;
-    window.speechSynthesis.speak(u);
-}
-async function actualizarStatsAcceso(){
-    const snap=await db.collection('asistencias').where('fecha','==',hoy).get();
-    document.getElementById('statEntradas').innerText=snap.size;
-    document.getElementById('statMemb').innerText=snap.docs.filter(d=>d.data().tipo==='membresia').length;
-    document.getElementById('statPago').innerText =snap.docs.filter(d=>d.data().tipo==='pago').length;
-    const l=document.getElementById('listaEntradasHoy');
-    const sorted=snap.docs.sort((a,b)=>b.data().timestamp-a.data().timestamp).slice(0,15);
-    l.innerHTML=sorted.map(d=>{const a=d.data();return`<div class="flex justify-between items-center p-2.5 bg-white/5 rounded-xl border border-white/5 mb-1">
-        <div><p class="font-black text-xs uppercase text-white">${a.alumnoNombre||a.alumnoId}</p>
-        <p class="text-[9px] text-slate-400 font-bold">${a.hora||'--'}</p></div>
-        <span class="text-[9px] font-black px-2 py-1 rounded-full ${a.tipo==='membresia'?'bg-emerald-900 text-emerald-300':'bg-amber-900 text-amber-300'}">${a.tipo==='membresia'?'Membresía':'Pago'}</span>
-    </div>`;}).join('');
-}
-window.addEventListener('DOMContentLoaded',actualizarStatsAcceso);
 
-// ── SCANNER ──────────────────────────────────────────────────────
-function abrirScanner(modo){
-    modoScanner=modo;
-    document.getElementById('scannerModo').innerText='Modo: '+(modo==='acceso'?'Acceso':modo==='lista'?'Clase '+claseActiva?.nombre:'Asistencia');
-    document.getElementById('resultadoAcceso').classList.add('hidden');
-    document.getElementById('scannerOverlay').classList.add('active');
-    scanner=new Html5Qrcode('scannerBox');
-    scanner.start({facingMode:'environment'},{fps:10,qrbox:250},onScan).catch(e=>toast('Error cámara','❌'));
+// ══════════════════════════════════════════════════════════════════
+// COMENTARIOS
+// ══════════════════════════════════════════════════════════════════
+async function guardarComentarios(){
+  if(!claseActualId){toast('Selecciona una clase','⚠️');return;}
+  
+  const general=document.getElementById('comentarioGeneral').value.trim();
+  const temas=document.getElementById('temasCubiertos').value.trim();
+  const incidencias=document.getElementById('incidencias').value.trim();
+  
+  if(!general && !temas && !incidencias){
+    toast('Escribe al menos un comentario','⚠️');
+    return;
+  }
+  
+  try{
+    await db.collection('comentarios_clase').add({
+      claseId:claseActualId,
+      claseNombre:claseActualData.nombre,
+      profesorId:profesorActual.id,
+      profesorNombre:profesorActual.nombre,
+      fecha:hoy,
+      hora:new Date().toLocaleTimeString('es-MX'),
+      general,
+      temas,
+      incidencias,
+      timestamp:Date.now()
+    });
+    
+    toast('Comentarios guardados ✅','💬');
+    document.getElementById('comentarioGeneral').value='';
+    document.getElementById('temasCubiertos').value='';
+    document.getElementById('incidencias').value='';
+    
+    cargarComentariosPrevios(claseActualId);
+    
+  }catch(e){
+    toast('Error: '+e.message,'❌');
+  }
 }
-function cerrarScanner(){
-    scanner?.stop().catch(()=>{});scanner=null;
-    document.getElementById('scannerOverlay').classList.remove('active');
-}
-function onScan(text){
-    const id=text.split('|')[0];
-    if(modoScanner==='acceso') procesarAcceso(id);
-    else if(modoScanner==='lista') pasarListaQR(id);
-    else if(modoScanner==='asistencia') marcarAsistenciaQR(id);
-}
-function pasarListaQR(id){
-    const clase=clasesCatalogo.find(c=>c.id===claseActiva?.id);
-    toast((clase?.nombre||'Clase')+': '+id+' ✅','📋');
-    setTimeout(cerrarScanner,1500);
-}
-function marcarAsistenciaQR(id){
-    if(asistenciaActual[id]?.pendiente){toast('⚠️ '+( asistenciaActual[id].nombre||id)+' tiene pago pendiente');return;}
-    if(asistenciaActual[id.toUpperCase()]){
-        setAsist(id.toUpperCase(),'presente');
-        toast('Presente: '+asistenciaActual[id.toUpperCase()]?.nombre,'✅');
-        setTimeout(cerrarScanner,1500);
-    } else {
-        toast('Alumno no está en la lista de esta clase','⚠️');
+
+async function cargarComentariosPrevios(claseId){
+  try{
+    const snap=await db.collection('comentarios_clase')
+      .where('claseId','==',claseId)
+      .orderBy('timestamp','desc')
+      .limit(5)
+      .get();
+    
+    const hist=document.getElementById('historialComentarios');
+    
+    if(snap.empty){
+      hist.innerHTML='<p class="text-xs text-slate-600 text-center py-4">Sin comentarios previos</p>';  
+      return;
     }
+    
+    hist.innerHTML=snap.docs.map(d=>{
+      const c=d.data();
+      return `<div class="p-3 bg-white/5 rounded-lg border border-white/5">
+        <p class="text-xs font-bold text-slate-400 mb-1">${c.fecha} • ${c.hora}</p>
+        ${c.general?`<p class="text-xs text-white mb-1"><strong>General:</strong> ${c.general}</p>`:''}
+        ${c.temas?`<p class="text-xs text-white mb-1"><strong>Temas:</strong> ${c.temas}</p>`:''}
+        ${c.incidencias?`<p class="text-xs text-white"><strong>Incidencias:</strong> ${c.incidencias}</p>`:''}
+      </div>`;
+    }).join('');
+    
+  }catch(e){
+    console.error('Error al cargar comentarios:',e);
+  }
 }
 
-// ── MOVER ALUMNOS ─────────────────────────────────────────────────
-async function buscarAlumnoMover(){
-    const q=document.getElementById('moverAlumnoID').value.trim().toUpperCase();
-    if(!q)return;
-    try{
-        let snap=await db.collection('alumnos').doc(q).get();
-        if(!snap.exists){
-            const byName=await db.collection('alumnos').where('nombre','>=',q).where('nombre','<=',q+'\uf8ff').limit(1).get();
-            if(byName.empty){toast('Alumno no encontrado','❌');return;}
-            snap=byName.docs[0];
-        }
-        alumnoMoverInfo={id:snap.id||snap.data().id,...(snap.data?.()??snap)};
-        document.getElementById('moverAlumnoInfo').innerText='✅ '+alumnoMoverInfo.nombre+' ('+alumnoMoverInfo.id+')';
-    }catch(e){toast('Error: '+e.message,'❌');}
-}
-function moverAlumnoDirecto(alumnoId,origenId){
-    document.getElementById('moverAlumnoID').value=alumnoId;
-    buscarAlumnoMover();
-    document.getElementById('moverOrigen').value=origenId;
-    showView('historial',document.querySelector('.nav-item:last-child'));
-}
-async function moverAlumnoGrupo(){
-    if(!alumnoMoverInfo){toast('Busca un alumno primero','⚠️');return;}
-    const origen =document.getElementById('moverOrigen').value;
-    const destino=document.getElementById('moverDestino').value;
-    if(!origen||!destino){toast('Selecciona clases origen y destino','⚠️');return;}
-    if(origen===destino){toast('Origen y destino son iguales','⚠️');return;}
-    const claseDest=clasesCatalogo.find(c=>c.id===destino);
-    if(!claseDest){toast('Clase destino no encontrada','❌');return;}
-    if((claseDest.cupoDisponible??claseDest.cupo??0)<=0){toast('Sin lugares en la clase destino','🔴');return;}
-    try{
-        // Buscar reserva origen
-        const resOrig=await db.collection('reservas').where('alumnoId','==',alumnoMoverInfo.id).where('claseId','==',origen).where('estado','==','confirmada').get();
-        if(resOrig.empty){toast('El alumno no está inscrito en la clase origen','⚠️');return;}
-        const batch=db.batch();
-        // Liberar cupo en origen
-        batch.update(db.collection('catalogo').doc(origen),{cupoDisponible:firebase.firestore.FieldValue.increment(1)});
-        // Eliminar reserva origen
-        batch.delete(resOrig.docs[0].ref);
-        // Crear reserva destino
-        const nuevaRes=db.collection('reservas').doc();
-        batch.set(nuevaRes,{alumnoId:alumnoMoverInfo.id,alumnoNombre:alumnoMoverInfo.nombre,claseId:destino,claseNombre:claseDest.nombre,claseInicio:claseDest.inicio||'',claseFin:claseDest.fin||'',estado:'confirmada',alertaMostrada:false,timestamp:Date.now(),notaMov:'Movimiento manual desde '+origen});
-        // Descontar cupo en destino
-        batch.update(db.collection('catalogo').doc(destino),{cupoDisponible:firebase.firestore.FieldValue.increment(-1)});
-        await batch.commit();
-        toast('Alumno movido a '+claseDest.nombre,'🔄',4000);
-        document.getElementById('moverAlumnoInfo').innerText='';
-        document.getElementById('moverAlumnoID').value='';
-        alumnoMoverInfo=null;
-    }catch(e){toast('Error: '+e.message,'❌');}
+// ══════════════════════════════════════════════════════════════════
+// SCANNER QR
+// ══════════════════════════════════════════════════════════════════
+function abrirScanner(){
+  if(!claseActualId){toast('Selecciona una clase primero','⚠️');return;}
+  
+  document.getElementById('scannerClaseNombre').innerText=claseActualData.nombre;
+  document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scannerOverlay').classList.add('active');
+  
+  scanner=new Html5Qrcode('scannerBox');
+  scanner.start(
+    {facingMode:'environment'},
+    {fps:10,qrbox:280},
+    procesarQR
+  ).catch(e=>{
+    toast('Error al iniciar cámara','❌');
+    console.error(e);
+  });
 }
 
-// ── ESTADÍSTICAS ──────────────────────────────────────────────────
-async function cargarStatsClases(){
-    const hace7=new Date();hace7.setDate(hace7.getDate()-7);
-    const fechaMin=hace7.toISOString().split('T')[0];
-    const snap=await db.collection('asistencias').where('fecha','>=',fechaMin).get();
-    const porClase={};
-    snap.docs.forEach(d=>{const c=d.data().claseNombre||d.data().claseId;porClase[c]=(porClase[c]||0)+1;});
-    const l=document.getElementById('statsClases');
-    const entries=Object.entries(porClase).sort((a,b)=>b[1]-a[1]);
-    const max=entries[0]?.[1]||1;
-    l.innerHTML=entries.length===0?'<p class="text-slate-600 text-xs font-black uppercase text-center py-4">Sin datos</p>':
-    entries.map(([nombre,cnt])=>`<div>
-        <div class="flex justify-between text-xs font-black mb-1"><span class="text-white uppercase">${nombre}</span><span class="text-slate-400">${cnt} asistencias</span></div>
-        <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${(cnt/max)*100}%"></div></div>
-    </div>`).join('');
+function cerrarScanner(){
+  scanner?.stop().catch(()=>{});
+  scanner=null;
+  document.getElementById('scannerOverlay').classList.remove('active');
 }
-async function cargarHistorialAsist(){
-    const claseId=document.getElementById('filtroClaseStat').value;
-    const fecha  =document.getElementById('filtroFechaStat').value;
-    let q=db.collection('asistencias').orderBy('timestamp','desc').limit(50);
-    if(claseId) q=db.collection('asistencias').where('claseId','==',claseId).orderBy('timestamp','desc').limit(50);
-    if(fecha)   q=db.collection('asistencias').where('fecha','==',fecha).orderBy('timestamp','desc').limit(50);
-    const snap=await q.get();
-    const t=document.getElementById('tablaHistorialAsist');
-    t.innerHTML=snap.empty?'<p class="text-slate-600 text-xs font-black uppercase text-center py-4">Sin registros</p>':
-    snap.docs.map(d=>{const a=d.data();return`<div class="flex justify-between items-center p-2.5 bg-white/5 rounded-xl border border-white/5">
-        <div><p class="font-black text-xs uppercase text-white">${a.alumnoNombre||a.alumnoId}</p>
-        <p class="text-[9px] text-slate-400">${a.claseNombre||''} · ${a.fecha} ${a.hora||''}</p></div>
-        <span class="text-[9px] font-black px-2 py-1 rounded-full ${a.tipo==='presente'?'chip-presente':a.tipo==='tarde'?'chip-tard':'chip-ausente'}">${a.tipo||'presente'}</span>
-    </div>`;}).join('');
+
+function escanearOtro(){
+  document.getElementById('scanResult').classList.add('hidden');
+  if(!scanner){
+    scanner=new Html5Qrcode('scannerBox');
+    scanner.start({facingMode:'environment'},{fps:10,qrbox:280},procesarQR).catch(()=>{});
+  }
+}
+
+function procesarQR(texto){
+  const alumnoId=texto.split('|')[0].trim().toUpperCase();
+  
+  if(asistenciaMap[alumnoId]){
+    asistenciaMap[alumnoId].estado='presente';
+    renderListaAlumnos();
+    actualizarContadores();
+    
+    mostrarResultadoScan('ok',asistenciaMap[alumnoId].nombre,'Asistencia registrada ✅');
+    
+  }else{
+    mostrarResultadoScan('fail','ID: '+alumnoId,'No está inscrito en esta clase');
+  }
+}
+
+function mostrarResultadoScan(tipo,nombre,mensaje){
+  const el=document.getElementById('scanResult');
+  el.className=tipo==='ok'?'scan-result mt-6 rounded-2xl p-6 text-center resultado-ok':'scan-result mt-6 rounded-2xl p-6 text-center resultado-fail';
+  el.classList.remove('hidden');
+  
+  document.getElementById('scanIcon').innerText=tipo==='ok'?'✅':'❌';
+  document.getElementById('scanNombre').innerText=nombre;
+  document.getElementById('scanMensaje').innerText=mensaje;
+  
+  // Voz
+  if(window.speechSynthesis){
+    const u=new SpeechSynthesisUtterance(tipo==='ok'?'Presente '+nombre:'No inscrito');
+    u.lang='es-MX';
+    window.speechSynthesis.speak(u);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════════════════════════
+function mostrarVista(nombre){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+nombre).classList.add('active');
+}
+
+function volverDashboard(){
+  mostrarVista('dashboard');
+  claseActualId=null;
+  claseActualData=null;
+  cargarClasesDelProfesor();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ESTADÍSTICAS
+// ══════════════════════════════════════════════════════════════════
+async function actualizarEstadisticas(){
+  if(!profesorActual)return;
+  
+  try{
+    const snap=await db.collection('asistencias')
+      .where('profesorId','==',profesorActual.id)
+      .where('fecha','==',hoy)
+      .get();
+    
+    document.getElementById('statAsistenciasHoy').innerText=snap.size;
+    
+    // Total de alumnos únicos
+    const unicos=new Set(snap.docs.map(d=>d.data().alumnoId));
+    document.getElementById('statTotalAlumnos').innerText=unicos.size;
+    
+  }catch(e){
+    console.error('Error stats:',e);
+  }
 }
 </script>
+
 </body>
 </html>
