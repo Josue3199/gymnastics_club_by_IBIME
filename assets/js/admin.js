@@ -332,7 +332,7 @@ function renderEditPanel(hora,dia,area,franjaIdx){
     <div style="margin-bottom:.8rem">
       <p style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.35rem">Sugerencias rápidas</p>
       <div class="sugerencias">
-        ${sugeridas.map(s=>`<button class="sug-chip" onclick="agregarSugerida('${hora}','${dia}','${area}',${franjaIdx},'${s.replace(/'/g,"\\'")}')">+ ${s}</button>`).join('')}
+        ${sugeridas.map(s=>`<button class="sug-chip" onclick="agregarSugerida('${hora}','${dia}','${area}',${franjaIdx},'${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">+ ${s}</button>`).join('')}
       </div>
     </div>`:''}
 
