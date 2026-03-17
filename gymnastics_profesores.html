@@ -706,14 +706,19 @@ function _renderClasesProfesor(sbEl, dashEl) {
     return;
   }
 
+  // Día de hoy en español para comparar con c.dia
+  const diasES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const hoyDia = diasES[new Date().getDay()];
+
   sbEl.innerHTML = '';
   clasesProfesor.forEach(c => {
     const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
+    const esHoy = (c.dia || '') === hoyDia;
     sbEl.innerHTML += `
-      <div class="sb-class-item" id="sb-item-${esc(c.id)}" onclick="selectClass('${esc(c.id)}')">
+      <div class="sb-class-item${esHoy ? ' active' : ''}" id="sb-item-${esc(c.id)}" onclick="selectClass('${esc(c.id)}')">
         <div class="sb-class-icon">${esc(c.icon) || '🏋️'}</div>
         <div class="sb-class-info">
-          <div class="sb-class-name">${esc(c.nombre) || 'Sin nombre'}</div>
+          <div class="sb-class-name">${esc(c.nombre) || 'Sin nombre'}${esHoy ? ' <span style="font-size:.55rem;background:rgba(16,185,129,.2);color:#34d399;border-radius:4px;padding:1px 5px;font-weight:700">HOY</span>' : ''}</div>
           <div class="sb-class-meta">${esc(c.dia)} · ${esc(c.inicio)}–${esc(c.fin)}</div>
         </div>
         <div class="sb-class-badge">${inscritos}</div>
@@ -724,11 +729,12 @@ function _renderClasesProfesor(sbEl, dashEl) {
   clasesProfesor.forEach(c => {
     const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
     const pct = c.cupo ? Math.round((inscritos / c.cupo) * 100) : 0;
+    const esHoy = (c.dia || '') === hoyDia;
     dashEl.innerHTML += `
-      <div class="class-card fade-up" onclick="selectClass('${esc(c.id)}')">
+      <div class="class-card fade-up${esHoy ? ' class-card-hoy' : ''}" onclick="selectClass('${esc(c.id)}')" style="${esHoy ? 'border-color:rgba(16,185,129,.4);' : ''}">
         <div class="class-card-top">
           <div class="class-card-icon">${esc(c.icon) || '🏋️'}</div>
-          <div class="class-card-badge">${inscritos} inscritos</div>
+          <div class="class-card-badge" style="${esHoy ? 'background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.4);color:#34d399' : ''}">${esHoy ? '📅 Hoy · ' : ''}${inscritos} inscritos</div>
         </div>
         <div class="class-card-name">${esc(c.nombre) || 'Sin nombre'}</div>
         <div class="class-card-meta">
@@ -820,17 +826,23 @@ function loadAlumnos(claseId) {
   // Cancelar listener anterior
   if (_unsubAlumnos) { _unsubAlumnos(); _unsubAlumnos = null; }
 
+  // Obtener fecha de hoy en MX para filtrar sesiones del plan semanal
+  const hoyMX = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }); // YYYY-MM-DD
+
   _unsubAlumnos = db.collection('reservas')
     .where('claseId', '==', claseId)
     .where('estado', '==', 'confirmada')
     .onSnapshot(snap => {
-      alumnosActuales = [];
-      snap.forEach(doc => alumnosActuales.push({ id: doc.id, ...doc.data() }));
+      // Filtrar: si la reserva tiene fechaClase (plan semanal), mostrar solo la de hoy.
+      // Si no tiene fechaClase (legacy), mostrarla siempre.
+      const todas = [];
+      snap.forEach(doc => todas.push({ id: doc.id, ...doc.data() }));
+      alumnosActuales = todas.filter(a => !a.fechaClase || a.fechaClase === hoyMX);
 
       document.getElementById('student-count').textContent = `${alumnosActuales.length} alumno${alumnosActuales.length !== 1 ? 's' : ''}`;
 
       if (!alumnosActuales.length) {
-        cont.innerHTML = '<div class="student-empty"><i class="fas fa-user-slash" style="font-size:1.5rem;opacity:.4;display:block;margin-bottom:8px"></i>No hay alumnos inscritos con estado confirmado</div>';
+        cont.innerHTML = '<div class="student-empty"><i class="fas fa-user-slash" style="font-size:1.5rem;opacity:.4;display:block;margin-bottom:8px"></i>No hay alumnos para la sesión de hoy con estado confirmado</div>';
         return;
       }
 
@@ -844,6 +856,9 @@ function loadAlumnos(claseId) {
         const horarioMeta = (a.dia && a.hora)
           ? `<div class="student-id" style="margin-top:2px">📅 ${esc(a.dia)} ${esc(a.hora)}${a.horaFin?' – '+esc(a.horaFin):''}</div>`
           : '';
+        const fechaMeta = a.fechaClase
+          ? `<div class="student-id" style="margin-top:2px;color:#6366f1">📆 Sesión: ${esc(a.fechaClase)}</div>`
+          : '';
         const pasesInfo = (typeof a.pasesRestantes === 'number' && a.pasesTotal)
           ? `<div class="student-id" style="color:#f59e0b">🎫 ${a.pasesRestantes}/${a.pasesTotal} pases</div>`
           : '';
@@ -854,6 +869,7 @@ function loadAlumnos(claseId) {
               <div class="student-name">${esc(a.alumnoNombre) || 'Sin nombre'}</div>
               <div class="student-id">ID: ${aId}</div>
               ${horarioMeta}
+              ${fechaMeta}
               ${pasesInfo}
             </div>
             <div class="student-badges">

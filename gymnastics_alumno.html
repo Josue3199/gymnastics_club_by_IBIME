@@ -425,8 +425,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
           <!-- Steps -->
           <div class="steps" id="stepsBar">
             <div class="step active" id="step-1"><div class="step-circle">1</div><div class="step-lbl">Área</div></div>
-            <div class="step" id="step-2"><div class="step-circle">2</div><div class="step-lbl">Disciplina</div></div>
-            <div class="step" id="step-3"><div class="step-circle">3</div><div class="step-lbl">Paquete</div></div>
+            <div class="step" id="step-2"><div class="step-circle">2</div><div class="step-lbl">Plan</div></div>
+            <div class="step" id="step-3"><div class="step-circle">3</div><div class="step-lbl">Horarios</div></div>
+            <div class="step" id="step-4"><div class="step-circle">4</div><div class="step-lbl">Resumen</div></div>
           </div>
 
           <!-- Paso 1 -->
@@ -448,28 +449,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             </div>
           </div>
 
-          <!-- Paso 2 -->
-          <div id="paso-discip" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-              <div style="display:flex;align-items:center;gap:.6rem">
-                <button onclick="volverPaso(1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
-                <p id="paso2-titulo" style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em"></p>
-              </div>
-              <span id="badge-sel-count" style="display:none;font-size:.6rem;font-weight:800;background:var(--azul);color:white;padding:3px 10px;border-radius:99px"></span>
-            </div>
-            <p style="font-size:.62rem;font-weight:700;color:var(--txt2);margin-bottom:.75rem">Elige una o más disciplinas de tu interés:</p>
-            <div id="listDiscip" style="display:flex;flex-direction:column;gap:.45rem"></div>
-            <div id="btn-continuar-discip" onclick="irPaso3()" style="display:none;margin-top:1rem;padding:.9rem;border-radius:12px;text-align:center;cursor:pointer;font-weight:900;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:white;border:none;transition:all .2s"></div>
-          </div>
-
-          <!-- Paso 3 -->
-          <div id="paso-frec" style="display:none">
+          <!-- Paso 2: Plan (número de clases por semana) -->
+          <div id="paso-plan" style="display:none">
             <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem">
-              <button onclick="volverPaso(2)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
-              <p style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em">Elige tu frecuencia semanal</p>
+              <button onclick="volverPaso(1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
+              <p id="paso2-titulo" style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em">¿Cuántas clases por semana?</p>
             </div>
-            <div id="discip-resumen" style="padding:.85rem 1rem;border-radius:12px;display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;border:1.5px solid var(--border)"></div>
-            <div class="frec-grid" id="frecGrid"></div>
+            <p style="font-size:.62rem;font-weight:700;color:var(--txt2);margin-bottom:.75rem">Elige cuántas clases quieres tomar <strong>cada semana</strong>. Esto define tu plan mensual.</p>
+            <div class="frec-grid" id="planGrid"></div>
             <div class="precio-box" id="precioBox" style="background:linear-gradient(135deg,var(--azul),var(--azul2))">
               <div>
                 <p style="font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.6;color:white;margin-bottom:.2rem">Regular</p>
@@ -478,6 +465,85 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
               <div style="text-align:right">
                 <p style="font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.6;color:white;margin-bottom:.2rem">Pronto pago 🏷️</p>
                 <p id="precioPromo" style="font-size:2rem;font-weight:900;color:white;line-height:1"></p>
+              </div>
+            </div>
+            <p style="font-size:.58rem;color:var(--txt2);font-weight:600;text-align:center;margin-bottom:.85rem">Válido los primeros 5 días hábiles del mes</p>
+            <button id="btnIrHorarios" onclick="irPasoHorarios()" style="width:100%;padding:.9rem;border:none;border-radius:12px;color:white;font-family:'Outfit';font-weight:900;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s;background:var(--azul)"><i class="fa-solid fa-calendar-days" style="margin-right:8px"></i>Elegir mis horarios →</button>
+          </div>
+
+          <!-- Paso 3: Selector de slots (clases+horarios) -->
+          <div id="paso-slots" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <button onclick="volverPaso(2)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
+                <p style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em">Elige tus horarios</p>
+              </div>
+            </div>
+            <!-- Contador -->
+            <div id="slots-counter-box" style="background:#eef3ff;border:1.5px solid #c7d2fe;border-radius:12px;padding:.75rem 1rem;margin-bottom:.85rem;display:flex;align-items:center;justify-content:space-between">
+              <p id="slots-counter-txt" style="font-weight:800;font-size:.82rem;color:#1e3a6e">Selecciona <strong id="slots-counter-num">0</strong> de <strong id="slots-counter-total">0</strong></p>
+              <span id="slots-counter-badge" style="background:#1e3a6e;color:white;border-radius:99px;padding:2px 10px;font-size:.65rem;font-weight:800">0 / 0</span>
+            </div>
+            <p style="font-size:.62rem;font-weight:700;color:var(--txt2);margin-bottom:.75rem">Puedes mezclar disciplinas libremente:</p>
+            <div id="listSlots" style="display:flex;flex-direction:column;gap:.4rem"></div>
+            <div style="margin-top:1rem">
+              <button id="btn-ir-resumen" onclick="irPasoResumen()" style="display:none;width:100%;padding:.9rem;border:none;border-radius:12px;color:white;font-family:'Outfit';font-weight:900;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'"><i class="fa-solid fa-eye" style="margin-right:8px"></i>Ver resumen y confirmar →</button>
+            </div>
+          </div>
+
+          <!-- Paso 4: Resumen editable -->
+          <div id="paso-resumen" style="display:none">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.1rem">
+              <button onclick="volverPaso(3)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
+              <p style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em">Resumen de tu selección</p>
+            </div>
+            <div id="resumen-info" style="background:#eef3ff;border:1px solid #c7d2fe;border-radius:12px;padding:.8rem 1rem;margin-bottom:.85rem;font-size:.72rem;color:#1e40af;font-weight:700">
+              Se crearán reservas para <strong id="resumen-semanas">3 semanas</strong> (semana actual, semana siguiente y la subsecuente).
+            </div>
+            <div id="resumen-slots-list" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem"></div>
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:.8rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <p style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt2)">Total mensual</p>
+                <p id="resumen-precio" style="font-size:1.4rem;font-weight:900;color:var(--azul)">$0</p>
+              </div>
+              <div style="text-align:right">
+                <p style="font-size:.6rem;color:var(--txt2);font-weight:600" id="resumen-frec"></p>
+              </div>
+            </div>
+            <button onclick="volverPaso(3)" style="width:100%;padding:.8rem;border:1.5px solid var(--border);border-radius:12px;background:white;color:var(--txt2);font-family:'Outfit';font-weight:800;font-size:.78rem;text-transform:uppercase;cursor:pointer;margin-bottom:.5rem"><i class="fa-solid fa-pen" style="margin-right:6px"></i>Modificar selección</button>
+            <button id="btn-confirmar-plan" onclick="confirmarPlanSemanal()" style="width:100%;padding:.9rem;border:none;border-radius:12px;background:var(--azul);color:white;font-family:'Outfit';font-weight:900;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s"><i class="fa-solid fa-check-circle" style="margin-right:8px"></i>Confirmar y reservar</button>
+          </div>
+
+          <!-- Pasos legacy (mantener para flujo carrito existente) -->
+          <div id="paso-discip" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <button onclick="volverPaso(1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
+                <p id="paso2-titulo-legacy" style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em"></p>
+              </div>
+              <span id="badge-sel-count" style="display:none;font-size:.6rem;font-weight:800;background:var(--azul);color:white;padding:3px 10px;border-radius:99px"></span>
+            </div>
+            <p style="font-size:.62rem;font-weight:700;color:var(--txt2);margin-bottom:.75rem">Elige una o más disciplinas de tu interés:</p>
+            <div id="listDiscip" style="display:flex;flex-direction:column;gap:.45rem"></div>
+            <div id="btn-continuar-discip" onclick="irPaso3()" style="display:none;margin-top:1rem;padding:.9rem;border-radius:12px;text-align:center;cursor:pointer;font-weight:900;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:white;border:none;transition:all .2s"></div>
+          </div>
+
+          <!-- Paso frecuencia legacy -->
+          <div id="paso-frec" style="display:none">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem">
+              <button onclick="volverPaso(2)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--txt2)"><i class="fa-solid fa-arrow-left"></i></button>
+              <p style="font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.03em">Elige tu frecuencia semanal</p>
+            </div>
+            <div id="discip-resumen" style="padding:.85rem 1rem;border-radius:12px;display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;border:1.5px solid var(--border)"></div>
+            <div class="frec-grid" id="frecGrid"></div>
+            <div class="precio-box" id="precioBoxLegacy" style="background:linear-gradient(135deg,var(--azul),var(--azul2))">
+              <div>
+                <p style="font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.6;color:white;margin-bottom:.2rem">Regular</p>
+                <p id="precioNormalLegacy" style="font-size:.9rem;font-weight:700;color:rgba(255,255,255,.5);text-decoration:line-through"></p>
+              </div>
+              <div style="text-align:right">
+                <p style="font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.6;color:white;margin-bottom:.2rem">Pronto pago 🏷️</p>
+                <p id="precioPromoLegacy" style="font-size:2rem;font-weight:900;color:white;line-height:1"></p>
               </div>
             </div>
             <p style="font-size:.58rem;color:var(--txt2);font-weight:600;text-align:center;margin-bottom:.85rem">Válido los primeros 5 días hábiles del mes</p>
@@ -491,14 +557,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             <p class="section-lbl">¿Cómo funciona?</p>
             <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.72rem;color:var(--txt2);font-weight:600;line-height:1.5">
               <div style="display:flex;gap:.6rem"><span style="font-size:1rem">1️⃣</span><span>Elige tu área — <strong>Fitness</strong> o <strong>Gimnasia</strong></span></div>
-              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">2️⃣</span><span>Selecciona las disciplinas que te interesan</span></div>
-              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">3️⃣</span><span>Elige tu frecuencia semanal (1 a 5 clases por semana)</span></div>
-              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">4️⃣</span><span>Agrega al carrito y paga en recepción</span></div>
+              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">2️⃣</span><span>Elige tu plan semanal (Y clases/semana)</span></div>
+              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">3️⃣</span><span>Selecciona Y horarios (puedes mezclar disciplinas)</span></div>
+              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">4️⃣</span><span>Revisa el resumen y confirma — se reservan 3 semanas</span></div>
+              <div style="display:flex;gap:.6rem"><span style="font-size:1rem">5️⃣</span><span>Paga en recepción para activar tus reservas</span></div>
             </div>
           </div>
           <div class="card" style="padding:1.2rem">
-            <p class="section-lbl">Pronto pago</p>
-            <p style="font-size:.72rem;color:var(--txt2);font-weight:600;line-height:1.5">Paga los primeros <strong>5 días hábiles</strong> del mes y obtén tu descuento especial. El precio tachado es el precio regular.</p>
+            <p class="section-lbl">Modificar horarios</p>
+            <p style="font-size:.72rem;color:var(--txt2);font-weight:600;line-height:1.5">Puedes cambiar un horario hasta <strong>12 horas antes</strong> de que inicie la clase. El cambio se aplica a las 3 semanas reservadas (solo las semanas que no estén bloqueadas).</p>
           </div>
         </div>
       </div>
@@ -651,6 +718,11 @@ const db=firebase.firestore(),rtdb=firebase.database();
 
 let USER=null,CART=[],CATALOGO=[],MIS_RESERVAS=[],ORDEN_ACTIVA=null;
 let AREA_SEL=null,DISCIPS_SEL=new Set(),PKG=1;
+// Etapa 2: plan semanal
+let PLAN_Y=4; // número de clases por semana seleccionadas
+let SLOTS_SEL=[]; // array de slots seleccionados: [{claseId,claseNombre,dia,hora,horaFin,profesor,area,icon}]
+let _modifSlotKey=null; // slotKey del slot que se está modificando
+let _modifNuevoSlot=null; // nuevo slot seleccionado para aplicar
 
 // ════════════════════════════════════════════════════════════════
 // TOAST
@@ -948,24 +1020,23 @@ function compartirWA(){const m=`*IBIME GYMNASTICS CLUB*\nHola ${USER.nombre}!\nI
 // CLASES — PASOS
 // ════════════════════════════════════════════════════════════════
 function selArea(area){
-    AREA_SEL=area;DISCIPS_SEL.clear();PKG=4;
+    AREA_SEL=area;DISCIPS_SEL.clear();PKG=4;PLAN_Y=4;SLOTS_SEL=[];
     // Reset step indicators
     setStep(2);
     $( 'paso-area').style.display='none';
-    $( 'paso-discip').style.display='block';
+    $( 'paso-plan').style.display='block';
+    $( 'paso-slots').style.display='none';
+    $( 'paso-resumen').style.display='none';
+    $( 'paso-discip').style.display='none';
     $( 'paso-frec').style.display='none';
-    $( 'paso2-titulo').textContent=area==='fitness'?'🏃 Clases de Fitness':'🤸 Clases de Gimnasia';
-    // Colores botón continuar
-    const bc=$( 'btn-continuar-discip');
-    bc.className='btn-add '+(area==='fitness'?'fit':'gym');
-    // Modification window check
-    const _ahora = ahoraMX();
-    const _dia = _ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
-    const _tieneConfirmadas = MIS_RESERVAS.filter(r => r.estado === 'confirmada').length >= 2;
-    if (_tieneConfirmadas && _dia !== 1 && _dia !== 2) {
-        toast('⚠️ Los horarios solo pueden modificarse Lunes y Martes. Aún puedes agregar clases nuevas.', 5000);
-    }
-    renderDiscip();
+    $( 'paso2-titulo').textContent=area==='fitness'?'🏃 Fitness':'🤸 Gimnasia';
+    // Color botón ir a horarios
+    const esFit=area==='fitness';
+    const btnH=$('btnIrHorarios');
+    if(btnH)btnH.style.background=esFit?'var(--rojo)':'var(--azul)';
+    const pbox=$('precioBox');
+    if(pbox)pbox.style.background=esFit?'linear-gradient(135deg,var(--rojo),var(--rojo2,#a02220))':'linear-gradient(135deg,var(--azul),var(--azul2))';
+    renderPlanGrid();
 }
 
 function renderDiscip(){
@@ -1028,25 +1099,39 @@ function actualizarContinuarDiscip(){
     }else btn.style.display='none';
 }
 
-function irPaso3(){
-    if(!DISCIPS_SEL.size){toast('Selecciona al menos una disciplina');return;}
+function irPasoHorarios(){
+    if(!AREA_SEL){toast('Selecciona un área primero');return;}
     setStep(3);
-    $( 'paso-discip').style.display='none';
-    $( 'paso-frec').style.display='block';
-    renderPaquetes();
+    $('paso-plan').style.display='none';
+    $('paso-slots').style.display='block';
+    renderSlotPicker();
+}
+
+function irPasoResumen(){
+    if(SLOTS_SEL.length<PLAN_Y){toast('⚠️ Selecciona '+PLAN_Y+' horarios para continuar');return;}
+    setStep(4);
+    $('paso-slots').style.display='none';
+    $('paso-resumen').style.display='block';
+    renderResumen();
 }
 
 function volverPaso(n){
     setStep(n);
     $( 'paso-area').style.display=n===1?'block':'none';
-    $( 'paso-discip').style.display=n===2?'block':'none';
-    $( 'paso-frec').style.display=n===3?'block':'none';
-    if(n===2)renderDiscip();
+    $( 'paso-plan').style.display=n===2?'block':'none';
+    $( 'paso-slots').style.display=n===3?'block':'none';
+    $( 'paso-resumen').style.display=n===4?'block':'none';
+    // Legacy steps
+    $( 'paso-discip').style.display='none';
+    $( 'paso-frec').style.display='none';
+    if(n===2&&AREA_SEL)renderPlanGrid();
+    if(n===3)renderSlotPicker();
 }
 
 function setStep(active){
-    for(let i=1;i<=3;i++){
+    for(let i=1;i<=4;i++){
         const s=$( 'step-'+i);
+        if(!s)continue;
         s.classList.toggle('active',i===active);
         s.classList.toggle('done',i<active);
     }
@@ -1058,27 +1143,27 @@ function renderPaquetes(){
     // Resumen disciplinas
     const nombres=[...new Set([...DISCIPS_SEL].map(id=>{const it=CATALOGO.find(c=>c.id===id);return it?.nombre||'';}))];
     const rEl=$('discip-resumen');
-    rEl.style.borderColor=esFit?'var(--rojo)':'var(--azul)';
-    rEl.style.background=esFit?'linear-gradient(135deg,#fff5f4,white)':'linear-gradient(135deg,#eef3ff,white)';
-    const _bg=esFit?'#fff2f1':'#eef3ff';const _icon=esFit?'🏃':'🤸';const _area=esFit?'Fitness':'Gimnasia';
-    rEl.innerHTML=`<div style="width:36px;height:36px;border-radius:10px;background:${_bg};display:flex;align-items:center;justify-content:center;font-size:1.2rem">${_icon}</div><div style="flex:1"><p style="font-weight:900;font-size:.78rem;text-transform:uppercase">${_area}</p><p style="font-size:.65rem;color:#64748b;font-weight:600">${nombres.join(' &middot; ')}</p></div><button onclick="volverPaso(2)" style="font-size:.6rem;color:#64748b;background:none;border:1px solid #e2e8f0;border-radius:8px;padding:3px 8px;cursor:pointer">Cambiar</button>`;
+    if(rEl){
+        rEl.style.borderColor=esFit?'var(--rojo)':'var(--azul)';
+        rEl.style.background=esFit?'linear-gradient(135deg,#fff5f4,white)':'linear-gradient(135deg,#eef3ff,white)';
+        const _bg=esFit?'#fff2f1':'#eef3ff';const _icon=esFit?'🏃':'🤸';const _area=esFit?'Fitness':'Gimnasia';
+        rEl.innerHTML=`<div style="width:36px;height:36px;border-radius:10px;background:${_bg};display:flex;align-items:center;justify-content:center;font-size:1.2rem">${_icon}</div><div style="flex:1"><p style="font-weight:900;font-size:.78rem;text-transform:uppercase">${_area}</p><p style="font-size:.65rem;color:#64748b;font-weight:600">${nombres.join(' &middot; ')}</p></div><button onclick="volverPaso(2)" style="font-size:.6rem;color:#64748b;background:none;border:1px solid #e2e8f0;border-radius:8px;padding:3px 8px;cursor:pointer">Cambiar</button>`;
+    }
     // Botones frecuencia semanal
     let html='';
     for(const n of PKG_OPTS){
-        const c=tabla[n];
         const sel=PKG===n;
         const totalMes=n*4;
         html+=`<button onclick="setPkg(${n})" class="frec-btn ${sel?'on '+(esFit?'fit':'gym'):''}">
           ${n}/sem<span class="frec-sub">${totalMes} cl/mes</span>
         </button>`;
     }
-    $('frecGrid').innerHTML=html;
+    const fg=$('frecGrid');if(fg)fg.innerHTML=html;
     actualizarPrecio();
-    const pbox=$('precioBox');
+    const pbox=$('precioBoxLegacy');
     if(pbox)pbox.style.background=esFit?'linear-gradient(135deg,var(--rojo),var(--rojo2,#a02220))':'linear-gradient(135deg,var(--azul),var(--azul2))';
     const btn=$('btnAddCart');
-    btn.style.background=esFit?'var(--rojo)':'var(--azul)';
-    btn.style.boxShadow=esFit?'0 4px 16px rgba(200,56,42,.3)':'0 4px 16px rgba(30,58,110,.3)';
+    if(btn){btn.style.background=esFit?'var(--rojo)':'var(--azul)';btn.style.boxShadow=esFit?'0 4px 16px rgba(200,56,42,.3)':'0 4px 16px rgba(30,58,110,.3)';}
 }
 
 function setPkg(n){PKG=n;renderPaquetes();}
@@ -1086,8 +1171,447 @@ function setPkg(n){PKG=n;renderPaquetes();}
 function actualizarPrecio(){
     const tabla=AREA_SEL==='fitness'?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
     const c=tabla[PKG]||tabla[4];
-    $( 'precioNormal').textContent='$'+c.n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-    $( 'precioPromo').textContent='$'+c.p.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // New plan grid uses same IDs
+    const pn=$('precioNormal');const pp=$('precioPromo');
+    if(pn)pn.textContent='$'+c.n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(pp)pp.textContent='$'+c.p.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // Legacy
+    const pnl=$('precioNormalLegacy');const ppl=$('precioPromoLegacy');
+    if(pnl)pnl.textContent='$'+c.n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(ppl)ppl.textContent='$'+c.p.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// ════════════════════════════════════════════════════════════════
+// ETAPA 2 — PLAN SEMANAL
+// ════════════════════════════════════════════════════════════════
+
+// ── Utilidades de fecha/hora (zona México) ─────────────────────
+function weekStartMX(){
+    // Retorna la fecha del lunes de la semana actual en MX (Date, hora local)
+    const ahora=ahoraMX();
+    const dia=ahora.getDay(); // 0=Dom,1=Lun,...,6=Sáb
+    const offsetLunes=dia===0?-6:1-dia; // días hasta el lunes anterior
+    const lunes=new Date(ahora);
+    lunes.setHours(0,0,0,0);
+    lunes.setDate(ahora.getDate()+offsetLunes);
+    return lunes;
+}
+function addDaysMX(date,days){const d=new Date(date);d.setDate(d.getDate()+days);return d;}
+function toYYYYMMDD(date){
+    const y=date.getFullYear();
+    const m=String(date.getMonth()+1).padStart(2,'0');
+    const d=String(date.getDate()).padStart(2,'0');
+    return`${y}-${m}-${d}`;
+}
+const DIA_OFFSET_MAP={'Lunes':0,'Martes':1,'Miércoles':2,'Jueves':3,'Viernes':4,'Sábado':5,'Domingo':6};
+function fechaParaDia(weekStart,diaNombre){
+    const offset=DIA_OFFSET_MAP[diaNombre]??0;
+    return addDaysMX(weekStart,offset);
+}
+function isMXDST(y,mo,d){
+    if(mo<4||mo>10)return false;
+    if(mo>4&&mo<10)return true;
+    if(mo===4){const fs=firstSundayOf(y,4);return d>=fs;}
+    if(mo===10){const ls=lastSundayOf(y,10);return d<ls;}
+    return false;
+}
+function firstSundayOf(y,mo){const d=new Date(y,mo-1,1);const day=d.getDay();return day===0?1:1+(7-day);}
+function lastSundayOf(y,mo){const days=new Date(y,mo,0).getDate();const d=new Date(y,mo-1,days);return days-(d.getDay()===0?0:d.getDay());}
+function mxToTimestamp(dateStr,timeStr){
+    const[y,mo,d]=dateStr.split('-').map(Number);
+    const[h,mi]=(timeStr||'00:00').split(':').map(Number);
+    const offset=isMXDST(y,mo,d)?5:6; // hours to add to convert MX→UTC
+    return new Date(Date.UTC(y,mo-1,d,h+offset,mi,0,0));
+}
+function slotKey(alumnoId,claseId,dia,hora){
+    // Genera una clave estable para el slot (mismo horario, diferente semana)
+    const safe=s=>String(s||'').replace(/[^a-zA-Z0-9]/g,'_');
+    return`${safe(alumnoId)}_${safe(claseId)}_${safe(dia)}_${safe(hora)}`;
+}
+function planDocId(alumnoId,weekStartStr,claseId,dia,hora){
+    const safe=s=>String(s||'').replace(/[^a-zA-Z0-9]/g,'_');
+    return`${safe(alumnoId)}_W${safe(weekStartStr)}_${safe(claseId)}_${safe(dia)}_${safe(hora)}`;
+}
+function cutoffAt(startAtDate){
+    return new Date(startAtDate.getTime()-12*60*60*1000); // 12h antes
+}
+function puedeModificar(startAtDate){
+    return ahoraMX()<cutoffAt(startAtDate);
+}
+
+// ── Renderizar grid de plan (paso 2) ───────────────────────────
+function renderPlanGrid(){
+    const esFit=AREA_SEL==='fitness';
+    const tabla=esFit?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
+    let html='';
+    for(const n of PKG_OPTS){
+        const c=tabla[n];
+        const sel=PLAN_Y===n;
+        html+=`<button onclick="setPlanY(${n})" class="frec-btn ${sel?'on '+(esFit?'fit':'gym'):''}">
+          ${n}/sem<span class="frec-sub">${n*4} cl/mes</span>
+        </button>`;
+    }
+    const pg=$('planGrid');if(pg)pg.innerHTML=html;
+    actualizarPrecio();
+}
+
+function setPlanY(n){
+    PLAN_Y=n;PKG=n;
+    // Remove slots over the limit if needed
+    if(SLOTS_SEL.length>PLAN_Y)SLOTS_SEL=SLOTS_SEL.slice(0,PLAN_Y);
+    renderPlanGrid();
+}
+
+// ── Renderizar selector de slots (paso 3) ─────────────────────
+function renderSlotPicker(){
+    const esFit=AREA_SEL==='fitness';
+    const accentColor=esFit?'var(--rojo)':'var(--azul)';
+    // Actualizar contador
+    const resto=PLAN_Y-SLOTS_SEL.length;
+    const cntTxt=$('slots-counter-txt');
+    const cntBadge=$('slots-counter-badge');
+    const cntNum=$('slots-counter-num');
+    const cntTotal=$('slots-counter-total');
+    if(cntNum)cntNum.textContent=SLOTS_SEL.length;
+    if(cntTotal)cntTotal.textContent=PLAN_Y;
+    if(cntBadge)cntBadge.textContent=SLOTS_SEL.length+' / '+PLAN_Y;
+    const box=$('slots-counter-box');
+    if(box){
+        if(SLOTS_SEL.length>=PLAN_Y){
+            box.style.background='#dcfce7';box.style.borderColor='#86efac';
+            if(cntBadge){cntBadge.style.background='#16a34a';}
+            if(cntTxt)cntTxt.style.color='#166534';
+        } else {
+            box.style.background=esFit?'#fff5f4':'#eef3ff';
+            box.style.borderColor=esFit?'#fecaca':'#c7d2fe';
+            if(cntBadge){cntBadge.style.background=esFit?'var(--rojo)':'var(--azul)';}
+            if(cntTxt)cntTxt.style.color=esFit?'#991b1b':'#1e3a6e';
+        }
+    }
+    const btnRes=$('btn-ir-resumen');
+    if(btnRes){
+        if(SLOTS_SEL.length>=PLAN_Y){
+            btnRes.style.display='block';
+            btnRes.style.background=esFit?'var(--rojo)':'var(--azul)';
+        } else {
+            btnRes.style.display='none';
+        }
+    }
+
+    // Obtener todas las clases del área
+    const clases=CATALOGO.filter(c=>c.tipo==='clase'&&c.area===AREA_SEL);
+    const list=$('listSlots');
+    if(!list)return;
+    if(!clases.length){
+        list.innerHTML='<p style="text-align:center;color:var(--txt2);font-size:.8rem;padding:2rem;font-weight:600">Sin clases disponibles para esta área</p>';
+        return;
+    }
+    // Agrupar por nombre de disciplina
+    const grupos={};
+    clases.forEach(c=>{
+        const nombre=c.nombre||c.id;
+        if(!grupos[nombre])grupos[nombre]={nombre,icon:c.icon||'🏋️',clases:[]};
+        grupos[nombre].clases.push(c);
+    });
+    let html='';
+    Object.values(grupos).sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(gr=>{
+        // Obtener horarios disponibles
+        const horarios=[];
+        gr.clases.forEach(cl=>{
+            const cupoDisp=cl.cupoDisponible??cl.cupo??0;
+            if(cupoDisp<=0&&cl.cupo!=null)return; // sin cupo
+            const h={claseId:cl.id,claseNombre:cl.nombre,dia:cl.dia,hora:cl.inicio||'',horaFin:cl.fin||'',profesor:cl.profesor||'',area:cl.area,icon:cl.icon||'🏋️'};
+            if(h.dia&&h.hora)horarios.push(h);
+        });
+        if(!horarios.length)return;
+        html+=`<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem"><span style="font-size:1.2rem">${gr.icon}</span><p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p></div>`;
+        horarios.forEach(h=>{
+            const yaEsta=SLOTS_SEL.some(s=>s.claseId===h.claseId);
+            const sinCupo=false; // ya filtramos arriba
+            const selStyle=yaEsta?`border-color:${accentColor};background:${esFit?'#fff5f4':'#eef3ff'}`:
+                (SLOTS_SEL.length>=PLAN_Y&&!yaEsta?'opacity:.45;cursor:not-allowed':'border-color:#e2e8f0;background:white');
+            html+=`<div style="padding:.7rem .9rem;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:.35rem;cursor:pointer;transition:all .2s;${selStyle}" onclick="toggleSlot(${JSON.stringify(h).replace(/"/g,'&quot;')})">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <p style="font-weight:800;font-size:.8rem">${h.dia} · ${h.hora}${h.horaFin?' – '+h.horaFin:''}</p>
+                  <p style="font-size:.65rem;color:#64748b;font-weight:600;margin-top:2px">👤 ${h.profesor||'Sin asignar'}</p>
+                </div>
+                <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;${yaEsta?`background:${accentColor};border:none;color:white;font-size:.65rem`:'border:2px solid #cbd5e1;background:white'}">
+                  ${yaEsta?'<i class="fa-solid fa-check"></i>':''}
+                </div>
+              </div>
+            </div>`;
+        });
+        html+='</div>';
+    });
+    list.innerHTML=html||'<p style="text-align:center;color:var(--txt2);font-size:.8rem;padding:2rem;font-weight:600">Sin horarios disponibles</p>';
+}
+
+function toggleSlot(h){
+    const idx=SLOTS_SEL.findIndex(s=>s.claseId===h.claseId);
+    if(idx>-1){
+        SLOTS_SEL.splice(idx,1);
+    } else {
+        if(SLOTS_SEL.length>=PLAN_Y){toast('⚠️ Ya tienes '+PLAN_Y+' horarios. Quita uno para agregar otro.');return;}
+        SLOTS_SEL.push(h);
+    }
+    renderSlotPicker();
+}
+
+// ── Renderizar resumen (paso 4) ────────────────────────────────
+function renderResumen(){
+    const esFit=AREA_SEL==='fitness';
+    const tabla=esFit?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
+    const precio=tabla[PLAN_Y]||tabla[4];
+    const rp=$('resumen-precio');if(rp)rp.textContent='$'+precio.p.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const rf=$('resumen-frec');if(rf)rf.innerHTML=`<strong>${PLAN_Y}</strong> clases/semana · ${PLAN_Y*4} al mes`;
+    const box=$('resumen-slots-list');
+    if(!box)return;
+    box.innerHTML=SLOTS_SEL.map((s,i)=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span style="font-size:1.3rem">${s.icon}</span>
+          <div>
+            <p style="font-weight:800;font-size:.82rem">${s.claseNombre}</p>
+            <p style="font-size:.65rem;color:#64748b;font-weight:600">${s.dia} · ${s.hora}${s.horaFin?' – '+s.horaFin:''} · 👤 ${s.profesor||'Sin asignar'}</p>
+          </div>
+        </div>
+        <button onclick="SLOTS_SEL.splice(${i},1);setStep(3);$('paso-resumen').style.display='none';$('paso-slots').style.display='block';renderSlotPicker();" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;background:#fef2f2">✕</button>
+      </div>`).join('');
+}
+
+// ── Confirmar plan semanal → crear reservas para 3 semanas ────
+async function confirmarPlanSemanal(){
+    if(SLOTS_SEL.length<PLAN_Y){toast('⚠️ Selecciona '+PLAN_Y+' horarios');return;}
+    if(ORDEN_ACTIVA){toast('⚠️ Tienes un pago pendiente. Cancela la orden anterior primero.');return;}
+    const btn=$('btn-confirmar-plan');
+    if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px"></i>Creando reservas...';}
+    try{
+        let folio='';
+        let num=1;
+        await db.runTransaction(async tx=>{
+            const ref=db.collection('config').doc('contador_pagos');
+            const s=await tx.get(ref);num=s.exists?(s.data().ultimo_numero||0)+1:1;
+            tx.set(ref,{ultimo_numero:num},{merge:true});
+        });
+        folio='IBY-PAG-'+String(num).padStart(10,'0');
+
+        const esFit=AREA_SEL==='fitness';
+        const tabla=esFit?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
+        const precio=tabla[PLAN_Y]||tabla[4];
+        const ws0=weekStartMX();
+        const batch=db.batch();
+
+        SLOTS_SEL.forEach(slot=>{
+            for(let si=0;si<3;si++){
+                const ws=addDaysMX(ws0,si*7);
+                const wsStr=toYYYYMMDD(ws);
+                const fechaClase=fechaParaDia(ws,slot.dia);
+                const fechaClaseStr=toYYYYMMDD(fechaClase);
+                const startAtDate=mxToTimestamp(fechaClaseStr,slot.hora);
+                const endAtDate=slot.horaFin?mxToTimestamp(fechaClaseStr,slot.horaFin):null;
+                const docId=planDocId(USER.id,wsStr,slot.claseId,slot.dia,slot.hora);
+                const sk=slotKey(USER.id,slot.claseId,slot.dia,slot.hora);
+                const ref=db.collection('reservas').doc(docId);
+                const data={
+                    alumnoId:USER.id,alumnoNombre:USER.nombre||'',
+                    claseId:slot.claseId,claseNombre:slot.claseNombre||'',
+                    area:slot.area||AREA_SEL,
+                    folio,estado:'pendiente_pago',alertaMostrada:false,
+                    timestamp:Date.now(),
+                    frecuenciaSem:PLAN_Y,
+                    dia:slot.dia||'',hora:slot.hora||'',horaFin:slot.horaFin||'',
+                    profesor:slot.profesor||'',
+                    pasesTotal:PLAN_Y,pasesRestantes:PLAN_Y,
+                    // Campos Etapa 2
+                    planSemanal:true,
+                    slotKey:sk,
+                    weekStart:wsStr,
+                    semanaIndex:si,
+                    fechaClase:fechaClaseStr,
+                    startAt:firebase.firestore.Timestamp.fromDate(startAtDate),
+                    endAt:endAtDate?firebase.firestore.Timestamp.fromDate(endAtDate):null
+                };
+                batch.set(ref,data,{merge:true});
+            }
+        });
+        await batch.commit();
+
+        // Crear orden de pago en RTDB
+        const totalMonto=precio.p;
+        const detalle=SLOTS_SEL.map(s=>s.claseNombre+' '+s.dia+' '+s.hora).join(', ');
+        const orden={id:USER.id,nombre:USER.nombre,monto:totalMonto,detalle,folio,tieneInscripcion:false,fecha:new Date().toLocaleDateString('es-MX'),timestamp:Date.now()};
+        await rtdb.ref('estatus_acceso/'+USER.id).set(orden);
+        fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'REGISTRAR_PAGO',id:USER.id,nombre:USER.nombre,adicionales:detalle,idCarrito:folio,monto:totalMonto,metodo:'APP_PENDIENTE'})}).catch(()=>{});
+
+        // Reset
+        SLOTS_SEL=[];AREA_SEL=null;
+        volverPaso(1);
+        toast('✅ Reservas creadas para 3 semanas. Paga en recepción para confirmar.',5000);
+        navTo('misclases');
+    }catch(e){toast('❌ '+e.message,4000);}
+    finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check-circle" style="margin-right:8px"></i>Confirmar y reservar';}}
+}
+
+// ── Modificar slot (desde Mis Clases) ─────────────────────────
+function abrirModalModificar(sk){
+    _modifSlotKey=sk;
+    _modifNuevoSlot=null;
+    // Obtener reservas de este slotKey
+    const sesiones=MIS_RESERVAS.filter(r=>r.slotKey===sk);
+    if(!sesiones.length){toast('No se encontraron reservas para este slot');return;}
+    const ejSlot=sesiones[0];
+    // Label
+    const lbl=$('modif-slot-lbl');
+    if(lbl)lbl.textContent=`${ejSlot.claseNombre||''} · ${ejSlot.dia||''} ${ejSlot.hora||''}`;
+    // Aviso semanas bloqueadas
+    const aviso=$('modif-semanas-aviso');
+    const bloqueadas=sesiones.filter(r=>{
+        if(!r.startAt)return false;
+        const sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);
+        return!puedeModificar(sat);
+    });
+    const libres=sesiones.filter(r=>{
+        if(!r.startAt)return true; // si no tiene startAt, se permite
+        const sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);
+        return puedeModificar(sat);
+    });
+    if(bloqueadas.length>0&&aviso){
+        aviso.style.display='block';
+        aviso.textContent=`⚠️ Semana${bloqueadas.length>1?'s':''} ${bloqueadas.map(r=>'semana '+(r.semanaIndex+1)).join(', ')} ya bloqueada${bloqueadas.length>1?'s':''} (≤12h). Solo se actualizarán semana${libres.length>1?'s':''} ${libres.map(r=>(r.semanaIndex+1)).join(', ')}.`;
+    } else if(aviso){
+        aviso.style.display='none';
+    }
+    if(!libres.length){
+        toast('⚠️ Todas las sesiones de este slot están dentro de las 12h. No se puede modificar.');
+        return;
+    }
+    // Mostrar opciones de horarios
+    const area=ejSlot.area||AREA_SEL||'fitness';
+    const esFit=area==='fitness';
+    const accentColor=esFit?'var(--rojo)':'var(--azul)';
+    const clases=CATALOGO.filter(c=>c.tipo==='clase'&&c.area===area);
+    const grupos={};
+    clases.forEach(c=>{
+        const nombre=c.nombre||c.id;
+        if(!grupos[nombre])grupos[nombre]={nombre,icon:c.icon||'🏋️',clases:[]};
+        grupos[nombre].clases.push(c);
+    });
+    const list=$('modifSlotsList');
+    if(!list)return;
+    let html='';
+    Object.values(grupos).sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(gr=>{
+        const horarios=[];
+        gr.clases.forEach(cl=>{
+            const cupoDisp=cl.cupoDisponible??cl.cupo??1;
+            if(cupoDisp<=0&&cl.cupo!=null)return;
+            const h={claseId:cl.id,claseNombre:cl.nombre,dia:cl.dia,hora:cl.inicio||'',horaFin:cl.fin||'',profesor:cl.profesor||'',area:cl.area,icon:cl.icon||'🏋️'};
+            if(h.dia&&h.hora)horarios.push(h);
+        });
+        if(!horarios.length)return;
+        html+=`<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem"><span style="font-size:1.2rem">${gr.icon}</span><p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p></div>`;
+        horarios.forEach(h=>{
+            const isEsLaActual=h.claseId===ejSlot.claseId&&h.dia===ejSlot.dia&&h.hora===ejSlot.hora;
+            const isSeleccionado=_modifNuevoSlot&&_modifNuevoSlot.claseId===h.claseId;
+            const selStyle=isSeleccionado?`border-color:${accentColor};background:${esFit?'#fff5f4':'#eef3ff'}`:'border-color:#e2e8f0;background:white';
+            const esCurrent=isEsLaActual?`<span style="font-size:.55rem;background:#f0fdf4;color:#166534;border-radius:6px;padding:2px 6px;font-weight:700">Actual</span>`:'';
+            html+=`<div id="modif-h-${h.claseId}" style="padding:.7rem .9rem;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:.35rem;cursor:pointer;transition:all .2s;${selStyle}" onclick="seleccionarNuevoSlot(${JSON.stringify(h).replace(/"/g,'&quot;')})">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><p style="font-weight:800;font-size:.8rem">${h.dia} · ${h.hora}${h.horaFin?' – '+h.horaFin:''} ${esCurrent}</p><p style="font-size:.65rem;color:#64748b;font-weight:600;margin-top:2px">👤 ${h.profesor||'Sin asignar'}</p></div>
+                <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;${isSeleccionado?`background:${accentColor};border:none;color:white;font-size:.65rem`:'border:2px solid #cbd5e1;background:white'}">
+                  ${isSeleccionado?'<i class="fa-solid fa-check"></i>':''}
+                </div>
+              </div>
+            </div>`;
+        });
+        html+='</div>';
+    });
+    list.innerHTML=html||'<p style="text-align:center;color:var(--txt2);font-size:.8rem;padding:2rem">Sin horarios disponibles</p>';
+    const btnAplicar=$('btn-aplicar-modif');if(btnAplicar)btnAplicar.disabled=true;
+    $('modalModificar').style.display='flex';
+}
+
+function seleccionarNuevoSlot(h){
+    _modifNuevoSlot=h;
+    // Actualizar visual
+    document.querySelectorAll('[id^="modif-h-"]').forEach(el=>{
+        el.style.borderColor='#e2e8f0';el.style.background='white';
+        const chk=el.querySelector('div[style*="border-radius:50%"]');
+        if(chk){chk.style.background='white';chk.style.border='2px solid #cbd5e1';chk.innerHTML='';}
+    });
+    const el=document.getElementById('modif-h-'+h.claseId);
+    if(el){
+        const esFit=(h.area||'')!=='gimnasia';
+        const ac=esFit?'var(--rojo)':'var(--azul)';
+        el.style.borderColor=ac;el.style.background=esFit?'#fff5f4':'#eef3ff';
+        const chk=el.querySelector('div[style*="border-radius:50%"]');
+        if(chk){chk.style.background=ac;chk.style.border='none';chk.innerHTML='<i class="fa-solid fa-check" style="font-size:.65rem;color:white"></i>';}
+    }
+    const btnAplicar=$('btn-aplicar-modif');if(btnAplicar)btnAplicar.disabled=false;
+}
+
+function cerrarModalModificar(){
+    $('modalModificar').style.display='none';
+    _modifSlotKey=null;_modifNuevoSlot=null;
+}
+
+async function aplicarModificacion(){
+    if(!_modifSlotKey||!_modifNuevoSlot){toast('⚠️ Selecciona el nuevo horario');return;}
+    const btn=$('btn-aplicar-modif');
+    if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px"></i>Aplicando...';}
+    try{
+        const sesiones=MIS_RESERVAS.filter(r=>r.slotKey===_modifSlotKey&&r.planSemanal);
+        const h=_modifNuevoSlot;
+        const batch=db.batch();
+        let semanasActualizadas=0,semanasOmitidas=0;
+        for(const r of sesiones){
+            // Verificar cutoff
+            let sat=null;
+            if(r.startAt){sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);}
+            if(sat&&!puedeModificar(sat)){semanasOmitidas++;continue;}
+            // Calcular nuevos campos de fecha
+            const ws=r.weekStart;
+            const fechaClaseStr=toYYYYMMDD(fechaParaDia(new Date(ws+'T00:00:00'),h.dia));
+            const startAtDate=mxToTimestamp(fechaClaseStr,h.hora);
+            const endAtDate=h.horaFin?mxToTimestamp(fechaClaseStr,h.horaFin):null;
+            const nuevoSk=slotKey(USER.id,h.claseId,h.dia,h.hora);
+            const nuevoDocId=planDocId(USER.id,ws,h.claseId,h.dia,h.hora);
+            // Borrar doc antiguo (si cambia docId)
+            const oldDocId=planDocId(USER.id,ws,r.claseId,r.dia,r.hora);
+            if(oldDocId!==nuevoDocId){
+                const oldRef=db.collection('reservas').doc(oldDocId);
+                const newRef=db.collection('reservas').doc(nuevoDocId);
+                batch.delete(oldRef);
+                batch.set(newRef,{
+                    ...r,rid:undefined,slotKey:nuevoSk,claseId:h.claseId,claseNombre:h.claseNombre,
+                    dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||'',area:h.area||r.area,
+                    fechaClase:fechaClaseStr,
+                    startAt:firebase.firestore.Timestamp.fromDate(startAtDate),
+                    endAt:endAtDate?firebase.firestore.Timestamp.fromDate(endAtDate):null,
+                    modifiedAt:firebase.firestore.FieldValue.serverTimestamp(),
+                    modifiedBy:'alumno'
+                },{merge:true});
+            } else {
+                const ref=db.collection('reservas').doc(r.rid);
+                batch.update(ref,{
+                    claseId:h.claseId,claseNombre:h.claseNombre,slotKey:nuevoSk,
+                    dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||'',area:h.area||r.area,
+                    fechaClase:fechaClaseStr,
+                    startAt:firebase.firestore.Timestamp.fromDate(startAtDate),
+                    endAt:endAtDate?firebase.firestore.Timestamp.fromDate(endAtDate):null,
+                    modifiedAt:firebase.firestore.FieldValue.serverTimestamp(),
+                    modifiedBy:'alumno'
+                });
+            }
+            semanasActualizadas++;
+        }
+        await batch.commit();
+        let msg=`✅ Horario actualizado en ${semanasActualizadas} semana${semanasActualizadas!==1?'s':''}`;
+        if(semanasOmitidas>0)msg+=` (${semanasOmitidas} bloqueada${semanasOmitidas>1?'s':''} por ≤12h)`;
+        toast(msg,4000);
+        cerrarModalModificar();
+    }catch(e){toast('❌ Error al modificar: '+e.message,4000);}
+    finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check" style="margin-right:8px"></i>Aplicar cambio';}}
 }
 
 function agregarAlCarrito(){
@@ -1442,7 +1966,35 @@ function estadoClaseRT(r){
     if(r.asistencia===true)return{txt:'Asistencia registrada',cls:'badge-green',icon:'✅'};
     if(r.falta===true)return{txt:'Falta registrada — pase descontado',cls:'badge-red',icon:'❌'};
     if(r.estado==='pre-reserva'||r.estado==='pendiente_pago')return{txt:'⏳ Pago pendiente',cls:'badge-amber',icon:'⏳'};
+    if(r.estado==='cancelada')return{txt:'Cancelada',cls:'badge-red',icon:'🚫'};
     if(r.estado!=='confirmada')return null; // no calcular para no confirmadas
+
+    // Usar startAt (Timestamp) si está disponible para mayor precisión
+    if(r.startAt){
+        const sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);
+        const ahora=ahoraMX();
+        let finDate=null;
+        if(r.endAt){finDate=r.endAt.toDate?r.endAt.toDate():new Date(r.endAt);}
+        else{finDate=new Date(sat.getTime()+60*60*1000);} // default +1h
+
+        // Verificar si es hoy (en MX)
+        const hoyStr=toYYYYMMDD(ahora);
+        const fechaStr=r.fechaClase||toYYYYMMDD(sat);
+        if(hoyStr!==fechaStr){
+            const diffDias=Math.ceil((sat-ahora)/86400000);
+            if(diffDias>7)return{txt:'Futura ('+r.fechaClase+')',cls:'badge-gray',icon:'📅'};
+            return{txt:'Próxima: '+r.dia+' '+r.hora,cls:'badge-gray',icon:'📅'};
+        }
+
+        const diffMs=sat-ahora;
+        const diffMin=Math.round(diffMs/60000);
+        if(ahora>=finDate)return{txt:'Clase terminada — pase descontado',cls:'badge-red',icon:'🕒',extra:'Si no asististe se descuenta igual (política estricta). Consulta al profesor si marcó tu asistencia.'};
+        if(diffMin<=0&&ahora<finDate)return{txt:'Tu clase comenzó — ¡entra ya!',cls:'badge-now',icon:'🟢'};
+        if(diffMin>0&&diffMin<=30)return{txt:'Tu clase '+(r.claseNombre||'')+' inicia en ~'+diffMin+' min',cls:'badge-now',icon:'🔔'};
+        return{txt:'Hoy '+r.hora+(r.horaFin?' – '+r.horaFin:''),cls:'badge-blue',icon:'🔵'};
+    }
+
+    // Fallback: usar dia/hora (lógica anterior)
     if(!r.dia||!r.hora)return{txt:'Confirmada',cls:'badge-green',icon:'✅'};
     const ahora=ahoraMX();
     const hoyDia=diaSemana(ahora);
@@ -1468,35 +2020,97 @@ function renderMisClases(){
         l.innerHTML='<div class="card" style="padding:2rem;text-align:center;"><div style="font-size:2.5rem;margin-bottom:.75rem">📅</div><p style="font-weight:800;font-size:.85rem;color:#64748b">Sin clases reservadas</p><button onclick="navTo(\'clases\')" style="margin-top:.75rem;padding:.6rem 1.2rem;background:#1e3a6e;color:white;border:none;border-radius:10px;font-size:.72rem;font-weight:800;text-transform:uppercase;cursor:pointer">Explorar Clases</button></div>';
         return;
     }
-    let html='';
-    MIS_RESERVAS.forEach(r=>{
-        const esFit=(r.area||'')==='fitness';
-        const color=esFit?'#c8382a':'#1e3a6e';
-        const icono=r.icon||(esFit?'🏃':'🤸');
-        const rt=estadoClaseRT(r);
-        const badgeTxt=rt?rt.icon+' '+rt.txt:'';
-        const badgeCls=rt?rt.cls:'';
-        const extra=rt?.extra?'<p style="font-size:.6rem;color:#94a3b8;margin-top:.3rem;font-style:italic">'+rt.extra+'</p>':'';
-        const preres=r.estado==='pre-reserva'||r.estado==='pendiente_pago';
-        const cancelBtn=preres?('<button onclick="cancelarReserva(\''+r.rid+'\',' + '\''+r.claseId+'\')" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;text-transform:uppercase;padding:0;margin-top:.4rem"><i class="fa-solid fa-trash-can" style="margin-right:3px"></i>Cancelar pre-reserva</button>'):'';
-        const clasesInfo=(typeof r.pasesRestantes==='number'&&r.pasesTotal)?
-            '<p style="font-size:.6rem;font-weight:700;color:#64748b">🎫 '+r.pasesRestantes+'/'+r.pasesTotal+' pases restantes</p>':
-            (typeof r.clasesRestantes==='number'&&r.clasesPaquete)?
-            '<p style="font-size:.6rem;font-weight:700;color:#64748b">'+r.clasesRestantes+'/'+r.clasesPaquete+' clases restantes</p>':'';
-        const horarioInfo=(r.dia&&r.hora)?('<p style="font-size:.65rem;font-weight:700;color:#64748b;margin-top:2px">'+r.dia+' '+r.hora+(r.horaFin?' – '+r.horaFin:'')+(r.profesor?' · 👤 '+r.profesor:'')+'</p>'):'';
-        html+='<div class="card" style="padding:1rem;margin-bottom:.6rem">'
-            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">'
-            +'<div style="display:flex;align-items:center;gap:.6rem">'
-            +'<div style="width:40px;height:40px;border-radius:10px;background:'+(esFit?'#fff2f1':'#eef3ff')+';display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">'+icono+'</div>'
-            +'<div><p style="font-weight:900;font-size:.85rem;text-transform:uppercase">'+(r.claseNombre||r.disciplina||'Clase')+'</p>'
-            +horarioInfo
-            +clasesInfo+'</div></div>'
-            +(badgeTxt?'<span class="badge '+badgeCls+'" style="white-space:nowrap;font-size:.6rem">'+badgeTxt+'</span>':'')
-            +'</div>'
-            +extra
-            +cancelBtn
-            +'</div>';
+
+    // Separar reservas plan-semanal de las legacy
+    const planReservas=MIS_RESERVAS.filter(r=>r.planSemanal);
+    const legacyReservas=MIS_RESERVAS.filter(r=>!r.planSemanal);
+
+    // Agrupar plan reservas por slotKey
+    const slotGroups={};
+    planReservas.forEach(r=>{
+        const sk=r.slotKey||r.claseId+'_'+r.dia+'_'+r.hora;
+        if(!slotGroups[sk])slotGroups[sk]=[];
+        slotGroups[sk].push(r);
     });
+    // Ordenar sesiones dentro de cada grupo por semanaIndex
+    Object.values(slotGroups).forEach(g=>g.sort((a,b)=>(a.semanaIndex||0)-(b.semanaIndex||0)));
+
+    let html='';
+
+    // ── Sección de plan semanal ──────────────────────────────────
+    if(Object.keys(slotGroups).length>0){
+        html+='<p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2);margin-bottom:.6rem">📅 Plan Semanal</p>';
+        Object.entries(slotGroups).forEach(([sk,sesiones])=>{
+            const ej=sesiones[0];
+            const esFit=(ej.area||'')==='fitness';
+            const icono=ej.icon||(esFit?'🏃':'🤸');
+            // Verificar si alguna sesión es modificable
+            const haveModifiable=sesiones.some(r=>{
+                if(!r.startAt)return true;
+                const sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);
+                return puedeModificar(sat);
+            });
+            const modificarBtn=haveModifiable
+                ?`<button onclick="abrirModalModificar('${sk.replace(/'/g,'\\\'')}')" style="font-size:.62rem;font-weight:800;background:var(--azul);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;white-space:nowrap"><i class="fa-solid fa-pen" style="margin-right:4px"></i>Modificar</button>`
+                :'<span style="font-size:.62rem;font-weight:700;color:#94a3b8;background:#f1f5f9;border-radius:8px;padding:4px 10px">🔒 Bloqueado</span>';
+
+            html+='<div class="card" style="padding:1rem;margin-bottom:.75rem">'
+                +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.65rem">'
+                +'<div style="display:flex;align-items:center;gap:.6rem">'
+                +'<div style="width:40px;height:40px;border-radius:10px;background:'+(esFit?'#fff2f1':'#eef3ff')+';display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">'+icono+'</div>'
+                +'<div><p style="font-weight:900;font-size:.85rem;text-transform:uppercase">'+(ej.claseNombre||'Clase')+'</p>'
+                +'<p style="font-size:.65rem;font-weight:700;color:#64748b;margin-top:2px">'+ej.dia+' · '+ej.hora+(ej.horaFin?' – '+ej.horaFin:'')+(ej.profesor?' · 👤 '+ej.profesor:'')+'</p>'
+                +'</div></div>'
+                +modificarBtn
+                +'</div>'
+                // Semanas
+                +'<div style="display:flex;flex-direction:column;gap:.35rem">';
+            sesiones.forEach(r=>{
+                const rt=estadoClaseRT(r);
+                const badgeTxt=rt?rt.icon+' '+rt.txt:'';
+                const badgeCls=rt?rt.cls:'badge-gray';
+                let satBlocked=false;
+                if(r.startAt){const sat=r.startAt.toDate?r.startAt.toDate():new Date(r.startAt);satBlocked=!puedeModificar(sat);}
+                const semLbl='Sem '+(r.semanaIndex+1)+(r.fechaClase?' ('+r.fechaClase+')':'');
+                html+='<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:.5rem .75rem">'
+                    +'<div style="display:flex;align-items:center;gap:.5rem">'
+                    +(satBlocked?'<i class="fa-solid fa-lock" style="font-size:.6rem;color:#94a3b8"></i>':'<i class="fa-regular fa-calendar" style="font-size:.6rem;color:#64748b"></i>')
+                    +'<span style="font-size:.65rem;font-weight:700;color:#475569">'+semLbl+'</span>'
+                    +'</div>'
+                    +(badgeTxt?'<span class="badge '+badgeCls+'" style="white-space:nowrap;font-size:.58rem">'+badgeTxt+'</span>':'')
+                    +'</div>';
+            });
+            html+='</div></div>';
+        });
+    }
+
+    // ── Reservas legacy ──────────────────────────────────────────
+    if(legacyReservas.length>0){
+        if(Object.keys(slotGroups).length>0)html+='<p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2);margin-bottom:.6rem;margin-top:.85rem">📋 Otras reservas</p>';
+        legacyReservas.forEach(r=>{
+            const esFit=(r.area||'')==='fitness';
+            const icono=r.icon||(esFit?'🏃':'🤸');
+            const rt=estadoClaseRT(r);
+            const badgeTxt=rt?rt.icon+' '+rt.txt:'';
+            const badgeCls=rt?rt.cls:'';
+            const extra=rt?.extra?'<p style="font-size:.6rem;color:#94a3b8;margin-top:.3rem;font-style:italic">'+rt.extra+'</p>':'';
+            const preres=r.estado==='pre-reserva'||r.estado==='pendiente_pago';
+            const cancelBtn=preres?('<button onclick="cancelarReserva(\''+r.rid+'\',' + '\''+r.claseId+'\')" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;text-transform:uppercase;padding:0;margin-top:.4rem"><i class="fa-solid fa-trash-can" style="margin-right:3px"></i>Cancelar pre-reserva</button>'):'';
+            const clasesInfo=(typeof r.pasesRestantes==='number'&&r.pasesTotal)?
+                '<p style="font-size:.6rem;font-weight:700;color:#64748b">🎫 '+r.pasesRestantes+'/'+r.pasesTotal+' pases restantes</p>':
+                (typeof r.clasesRestantes==='number'&&r.clasesPaquete)?
+                '<p style="font-size:.6rem;font-weight:700;color:#64748b">'+r.clasesRestantes+'/'+r.clasesPaquete+' clases restantes</p>':'';
+            const horarioInfo=(r.dia&&r.hora)?('<p style="font-size:.65rem;font-weight:700;color:#64748b;margin-top:2px">'+r.dia+' '+r.hora+(r.horaFin?' – '+r.horaFin:'')+(r.profesor?' · 👤 '+r.profesor:'')+'</p>'):'';
+            html+='<div class="card" style="padding:1rem;margin-bottom:.6rem">'
+                +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">'
+                +'<div style="display:flex;align-items:center;gap:.6rem">'
+                +'<div style="width:40px;height:40px;border-radius:10px;background:'+(esFit?'#fff2f1':'#eef3ff')+';display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">'+icono+'</div>'
+                +'<div><p style="font-weight:900;font-size:.85rem;text-transform:uppercase">'+(r.claseNombre||r.disciplina||'Clase')+'</p>'
+                +horarioInfo+clasesInfo+'</div></div>'
+                +(badgeTxt?'<span class="badge '+badgeCls+'" style="white-space:nowrap;font-size:.6rem">'+badgeTxt+'</span>':'')
+                +'</div>'+extra+cancelBtn+'</div>';
+        });
+    }
     l.innerHTML=html;
 }
 
@@ -1540,7 +2154,12 @@ function checkClaseActual(){
 async function cancelarReserva(rid,cid){
     if(!confirm('¿Cancelar esta reserva?'))return;
     try{
-        await db.collection('catalogo').doc(cid).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
+        const reservaSnap=await db.collection('reservas').doc(rid).get();
+        const reservaData=reservaSnap.exists?reservaSnap.data():{};
+        // Solo restaurar cupo para reservas legacy (no plan semanal)
+        if(!reservaData.planSemanal){
+            await db.collection('catalogo').doc(cid).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
+        }
         await db.collection('reservas').doc(rid).delete();
         toast('Reserva cancelada');
     }catch{toast('❌ Error al cancelar');}
@@ -1627,7 +2246,7 @@ async function guardarPrimerPass(){
 
 </script>
 
-<!-- MODAL HORARIOS -->
+<!-- MODAL HORARIOS (legacy - carrito) -->
 <div id="modalHorarios" style="position:fixed;inset:0;z-index:110;background:rgba(10,16,30,.85);display:none;align-items:flex-end;justify-content:center;padding:0">
   <div class="horarios-sheet" style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;padding:0">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.4rem;border-bottom:1px solid #e2e8f0;flex-shrink:0">
@@ -1640,6 +2259,24 @@ async function guardarPrimerPass(){
       <button onclick="confirmarHorarios()" style="width:100%;padding:.9rem;background:#1e3a6e;color:white;border:none;border-radius:12px;font-family:'Outfit';font-weight:900;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#264971'" onmouseout="this.style.background='#1e3a6e'">
         <i class="fa-solid fa-cart-plus" style="margin-right:8px"></i>Confirmar y agregar al carrito
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MODIFICAR SLOT -->
+<div id="modalModificar" style="position:fixed;inset:0;z-index:115;background:rgba(10,16,30,.85);display:none;align-items:flex-end;justify-content:center;padding:0">
+  <div style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.4rem;border-bottom:1px solid #e2e8f0;flex-shrink:0">
+      <div>
+        <p style="font-weight:900;font-size:1rem;color:#1a2540">✏️ Modificar horario</p>
+        <p id="modif-slot-lbl" style="font-size:.68rem;color:#64748b;font-weight:600;margin-top:2px"></p>
+      </div>
+      <button onclick="cerrarModalModificar()" style="background:#f1f5f9;border:none;border-radius:8px;padding:.35rem .7rem;font-size:.85rem;cursor:pointer;font-weight:700;color:#64748b">✕</button>
+    </div>
+    <div id="modif-semanas-aviso" style="display:none;background:#fffbeb;border-bottom:1px solid #fde68a;padding:.6rem 1.4rem;font-size:.68rem;font-weight:700;color:#92400e"></div>
+    <div id="modifSlotsList" style="overflow-y:auto;flex:1;padding:1.2rem 1.4rem"></div>
+    <div style="padding:1rem 1.4rem;border-top:1px solid #e2e8f0;flex-shrink:0">
+      <button id="btn-aplicar-modif" onclick="aplicarModificacion()" style="width:100%;padding:.9rem;background:#1e3a6e;color:white;border:none;border-radius:12px;font-family:'Outfit';font-weight:900;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s" disabled><i class="fa-solid fa-check" style="margin-right:8px"></i>Aplicar cambio</button>
     </div>
   </div>
 </div>
