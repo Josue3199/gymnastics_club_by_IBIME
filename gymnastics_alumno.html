@@ -611,6 +611,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
     <div style="background:#f8fafc;border-radius:14px;border:2px dashed var(--border);padding:1rem;display:flex;justify-content:center;margin-bottom:1.2rem"><div id="qrPagoContainer"></div></div>
     <p style="font-size:.65rem;text-transform:uppercase;font-weight:700;color:var(--txt2);margin-bottom:.3rem">Total a pagar</p>
     <p id="qrMonto" style="font-size:2.5rem;font-weight:900;color:var(--azul);margin-bottom:.5rem"></p>
+    <p id="qrDetalle" style="font-size:.65rem;font-weight:600;color:var(--txt2);text-align:center;margin-top:.3rem;max-width:300px;word-break:break-word"></p>
+    <p id="qrInscInfo" style="display:none;font-size:.7rem;text-align:center;margin-top:.25rem;padding:.3rem .7rem;background:#f0fdf4;border-radius:8px"></p>
     <p style="font-size:.65rem;color:var(--txt2)">Presenta este código en recepción</p>
     <button onclick="cancelarOrden()" style="margin-top:1.2rem;background:none;border:none;color:#ef4444;font-size:.65rem;font-weight:800;text-transform:uppercase;cursor:pointer"><i class="fa-solid fa-trash-can" style="margin-right:4px"></i>Cancelar Pedido</button>
   </div>
@@ -759,7 +761,7 @@ function iniciarPortal(){
     const _hoyInsc=new Date();
     const _fechaCargoInsc=new Date('2026-04-01');
     const _cobrarInscripcion=_hoyInsc>=_fechaCargoInsc;
-    if(!USER.inscripcionPagada){
+    if(!USER.inscripcionPagada && !USER.inscripcionExenta){
         if(_cobrarInscripcion){
             if(!CART.find(i=>i.tipo==='inscripcion')){
                 CART.unshift({id:'INSCRIPCION',nombre:'Inscripción IBIME',precio:INSCRIPCION_MONTO,icon:'⭐',tipo:'inscripcion'});
@@ -814,8 +816,10 @@ function iniciarPortal(){
         }
         if(d.inscripcionPagada!==undefined){
             USER.inscripcionPagada=d.inscripcionPagada;
+            USER.inscripcionExenta=d.inscripcionExenta||false;
+            USER.cuponUsado=d.cuponUsado||null;
             actualizarInscripcion();
-            if(d.inscripcionPagada){
+            if(d.inscripcionPagada||d.inscripcionExenta){
                 CART=CART.filter(i=>i.tipo!=='inscripcion');
                 actualizarBadge();
                 $('alertInsc').style.display='none';
@@ -870,7 +874,7 @@ function toggleDrawer(){toggleSidebar();}
 // ════════════════════════════════════════════════════════════════
 function actualizarInscripcion(){
     $('memNombre').textContent=USER.nombre||'';
-    const inscrita=USER.inscripcionPagada===true;
+    const inscrita=USER.inscripcionPagada===true || USER.inscripcionExenta===true;
     const hoy=new Date();
     const fechaCargo=new Date('2026-04-01');
     const conCargo=hoy>=fechaCargo;
@@ -925,7 +929,15 @@ function renderCredencial(){
     $( 'cNombre').textContent=USER.nombre||''
     $( 'cNivel').textContent=USER.nivel||''
     $( 'cID').textContent=USER.id||''
-    $( 'cVence').textContent=USER.inscripcionPagada?'Inscripción Activa ✅':'Inscripción Pendiente ⏳'
+    let venceText;
+    if (USER.inscripcionPagada) {
+        venceText = 'Inscripción Activa ✅';
+    } else if (USER.inscripcionExenta) {
+        venceText = 'Inscripción Exenta ✅ (' + (USER.cuponUsado||'cupón') + ')';
+    } else {
+        venceText = 'Inscripción Pendiente ⏳';
+    }
+    $( 'cVence').textContent=venceText
     const qr=$( 'qrCredencial');qr.innerHTML='';
     new QRCode(qr,{text:USER.id,width:150,height:150,colorDark:'#1e3a6e',colorLight:'#ffffff'});
 }
@@ -946,6 +958,13 @@ function selArea(area){
     // Colores botón continuar
     const bc=$( 'btn-continuar-discip');
     bc.className='btn-add '+(area==='fitness'?'fit':'gym');
+    // Modification window check
+    const _ahora = ahoraMX();
+    const _dia = _ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar
+    const _tieneConfirmadas = MIS_RESERVAS.filter(r => r.estado === 'confirmada').length >= 2;
+    if (_tieneConfirmadas && _dia !== 1 && _dia !== 2) {
+        toast('⚠️ Los horarios solo pueden modificarse Lunes y Martes. Aún puedes agregar clases nuevas.', 5000);
+    }
     renderDiscip();
 }
 
@@ -1159,6 +1178,7 @@ function abrirModalHorarios(){
                         this.style.borderColor='#1e3a6e';this.style.background='#eef3ff';
                         // Clave: nombre de la disciplina
                         _horariosSeleccionados[nombre]={claseId:claseId,horarioId:h.id||claseId,dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||''};
+                        actualizarProgresoHorarios(porNombre);
                     };
                 }
                 div.appendChild(btn);
@@ -1169,10 +1189,21 @@ function abrirModalHorarios(){
     if(!hayHorarios){
         lista.innerHTML='<p style="text-align:center;color:#64748b;font-size:.8rem;padding:2rem">No hay horarios disponibles para las disciplinas seleccionadas.<br>Contacta a recepción para más información.</p>';
     }
+    actualizarProgresoHorarios(porNombre);
     $('modalHorarios').classList.add('on');
 }
 
 function cerrarModalHorarios(){$('modalHorarios').classList.remove('on');}
+
+function actualizarProgresoHorarios(porNombre){
+    const totalDiscips = Object.keys(porNombre).length;
+    const seleccionadas = Object.keys(_horariosSeleccionados).length;
+    const progEl = $('horariosProgreso');
+    if (progEl) {
+        progEl.textContent = seleccionadas + ' de ' + totalDiscips + ' horarios seleccionados';
+        progEl.style.color = seleccionadas === totalDiscips ? '#059669' : '#f59e0b';
+    }
+}
 
 function confirmarHorarios(){
     const disciplinaIds=[...DISCIPS_SEL];
@@ -1365,6 +1396,25 @@ async function confirmarOrden(){
 function mostrarQR(data){
     $( 'qrFolio').textContent='FOLIO: '+data.folio;
     $( 'qrMonto').textContent='$'+data.monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // Show detalle items
+    const detalleEl = $('qrDetalle');
+    if (detalleEl) {
+        detalleEl.textContent = data.detalle || '';
+    }
+    // Show inscription info if applicable
+    const inscEl = $('qrInscInfo');
+    if (inscEl) {
+        if (data.tieneInscripcion) {
+            if (USER.inscripcionExenta && USER.cuponUsado) {
+                inscEl.innerHTML = '<span style="color:#059669;font-weight:800">⭐ Inscripción: $0 (Promo '+USER.cuponUsado+')</span>';
+            } else {
+                inscEl.innerHTML = '<span style="color:#d97706;font-weight:800">⭐ Inscripción incluida</span>';
+            }
+            inscEl.style.display = 'block';
+        } else {
+            inscEl.style.display = 'none';
+        }
+    }
     $( 'qrPagoContainer').innerHTML='';
     $( 'modalQR').classList.add('on');
     setTimeout(()=>new QRCode($( 'qrPagoContainer'),{text:`${data.id}|${data.folio}|${data.monto}`,width:160,height:160}),200);
@@ -1584,6 +1634,7 @@ async function guardarPrimerPass(){
       <p style="font-weight:900;font-size:1rem;color:#1a2540">🗓️ Selecciona tu horario</p>
       <button onclick="cerrarModalHorarios()" style="background:#f1f5f9;border:none;border-radius:8px;padding:.35rem .7rem;font-size:.85rem;cursor:pointer;font-weight:700;color:#64748b">✕</button>
     </div>
+    <p id="horariosProgreso" style="font-size:.7rem;font-weight:800;color:#f59e0b;text-align:center;margin:0;padding:.4rem 1.4rem;background:#fffbeb;border-bottom:1px solid #fde68a"></p>
     <div id="horariosList" style="overflow-y:auto;flex:1;padding:1.2rem 1.4rem"></div>
     <div style="padding:1rem 1.4rem;border-top:1px solid #e2e8f0;flex-shrink:0">
       <button onclick="confirmarHorarios()" style="width:100%;padding:.9rem;background:#1e3a6e;color:white;border:none;border-radius:12px;font-family:'Outfit';font-weight:900;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s" onmouseover="this.style.background='#264971'" onmouseout="this.style.background='#1e3a6e'">
