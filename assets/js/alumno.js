@@ -19,6 +19,9 @@ let PLAN_Y=4; // número de clases por semana seleccionadas
 let SLOTS_SEL=[]; // array de slots seleccionados: [{claseId,claseNombre,dia,hora,horaFin,profesor,area,icon}]
 let _modifSlotKey=null; // slotKey del slot que se está modificando
 let _modifNuevoSlot=null; // nuevo slot seleccionado para aplicar
+let _slotAccordion={}; // Estado de acordeones en el selector de slots (paso 3)
+let _modifAccordion={}; // Estado de acordeones en el modal de modificación
+let _modifEjSlot=null; // slot de referencia activo en el modal de modificación
 
 // ════════════════════════════════════════════════════════════════
 // TOAST
@@ -316,7 +319,7 @@ function compartirWA(){const m=`*IBIME GYMNASTICS CLUB*\nHola ${USER.nombre}!\nI
 // CLASES — PASOS
 // ════════════════════════════════════════════════════════════════
 function selArea(area){
-    AREA_SEL=area;DISCIPS_SEL.clear();PKG=4;PLAN_Y=4;SLOTS_SEL=[];
+    AREA_SEL=area;DISCIPS_SEL.clear();PKG=4;PLAN_Y=4;SLOTS_SEL=[];_slotAccordion={};
     // Reset step indicators
     setStep(2);
     $( 'paso-area').style.display='none';
@@ -620,10 +623,24 @@ function renderSlotPicker(){
             if(h.dia&&h.hora)horarios.push(h);
         });
         if(!horarios.length)return;
-        html+=`<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem"><span style="font-size:1.2rem">${gr.icon}</span><p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p></div>`;
+        const selEnGrupo=SLOTS_SEL.filter(s=>horarios.some(h=>h.claseId===s.claseId));
+        // Auto-expandir si tiene slots seleccionados y no se ha definido estado aún
+        if(selEnGrupo.length>0&&_slotAccordion[gr.nombre]===undefined)_slotAccordion[gr.nombre]=true;
+        const abierto=!!_slotAccordion[gr.nombre];
+        const nombreEsc=gr.nombre.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const badgeSel=selEnGrupo.length>0?`<span style="font-size:.6rem;font-weight:800;background:${accentColor};color:white;border-radius:99px;padding:2px 8px">${selEnGrupo.length} seleccionado/s</span>`:'';
+        html+=`<div style="margin-bottom:.5rem">`;
+        html+=`<div onclick="toggleSlotAccordion('${nombreEsc}')" style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;cursor:pointer;margin-bottom:.3rem">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:1.2rem">${gr.icon}</span>
+            <p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p>
+            ${badgeSel}
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:.7rem;color:#64748b;transition:transform .2s;transform:rotate(${abierto?'180':'0'}deg)"></i>
+        </div>`;
+        html+=`<div style="display:${abierto?'block':'none'}">`;
         horarios.forEach(h=>{
             const yaEsta=SLOTS_SEL.some(s=>s.claseId===h.claseId);
-            const sinCupo=false; // ya filtramos arriba
             const selStyle=yaEsta?`border-color:${accentColor};background:${esFit?'#fff5f4':'#eef3ff'}`:
                 (SLOTS_SEL.length>=PLAN_Y&&!yaEsta?'opacity:.45;cursor:not-allowed':'border-color:#e2e8f0;background:white');
             html+=`<div style="padding:.7rem .9rem;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:.35rem;cursor:pointer;transition:all .2s;${selStyle}" onclick="toggleSlot(${JSON.stringify(h).replace(/"/g,'&quot;')})">
@@ -638,7 +655,7 @@ function renderSlotPicker(){
               </div>
             </div>`;
         });
-        html+='</div>';
+        html+='</div></div>';
     });
     list.innerHTML=html||'<p style="text-align:center;color:var(--txt2);font-size:.8rem;padding:2rem;font-weight:600">Sin horarios disponibles</p>';
 }
@@ -651,6 +668,11 @@ function toggleSlot(h){
         if(SLOTS_SEL.length>=PLAN_Y){toast('⚠️ Ya tienes '+PLAN_Y+' horarios. Quita uno para agregar otro.');return;}
         SLOTS_SEL.push(h);
     }
+    renderSlotPicker();
+}
+
+function toggleSlotAccordion(nombre){
+    _slotAccordion[nombre]=!_slotAccordion[nombre];
     renderSlotPicker();
 }
 
@@ -741,7 +763,7 @@ async function confirmarPlanSemanal(){
         fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'REGISTRAR_PAGO',id:USER.id,nombre:USER.nombre,adicionales:detalle,idCarrito:folio,monto:totalMonto,metodo:'APP_PENDIENTE'})}).catch(()=>{});
 
         // Reset
-        SLOTS_SEL=[];AREA_SEL=null;
+        SLOTS_SEL=[];AREA_SEL=null;_slotAccordion={};
         volverPaso(1);
         toast('✅ Reservas creadas para 3 semanas. Paga en recepción para confirmar.',5000);
         navTo('misclases');
@@ -753,6 +775,7 @@ async function confirmarPlanSemanal(){
 function abrirModalModificar(sk){
     _modifSlotKey=sk;
     _modifNuevoSlot=null;
+    _modifAccordion={};
     // Obtener reservas de este slotKey
     const sesiones=MIS_RESERVAS.filter(r=>r.slotKey===sk);
     if(!sesiones.length){toast('No se encontraron reservas para este slot');return;}
@@ -783,6 +806,15 @@ function abrirModalModificar(sk){
         return;
     }
     // Mostrar opciones de horarios
+    _modifEjSlot=ejSlot;
+    _renderModifList();
+    const btnAplicar=$('btn-aplicar-modif');if(btnAplicar)btnAplicar.disabled=true;
+    $('modalModificar').style.display='flex';
+}
+
+function _renderModifList(){
+    const ejSlot=_modifEjSlot;
+    if(!ejSlot)return;
     const area=ejSlot.area||AREA_SEL||'fitness';
     const esFit=area==='fitness';
     const accentColor=esFit?'var(--rojo)':'var(--azul)';
@@ -805,7 +837,17 @@ function abrirModalModificar(sk){
             if(h.dia&&h.hora)horarios.push(h);
         });
         if(!horarios.length)return;
-        html+=`<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem"><span style="font-size:1.2rem">${gr.icon}</span><p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p></div>`;
+        const abierto=!!_modifAccordion[gr.nombre];
+        const nombreEsc=gr.nombre.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        html+=`<div style="margin-bottom:.5rem">`;
+        html+=`<div onclick="toggleModifAccordion('${nombreEsc}')" style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;cursor:pointer;margin-bottom:.3rem">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:1.2rem">${gr.icon}</span>
+            <p style="font-weight:900;font-size:.78rem;text-transform:uppercase;color:#1a2540">${gr.nombre}</p>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:.7rem;color:#64748b;transition:transform .2s;transform:rotate(${abierto?'180':'0'}deg)"></i>
+        </div>`;
+        html+=`<div style="display:${abierto?'block':'none'}">`;
         horarios.forEach(h=>{
             const isEsLaActual=h.claseId===ejSlot.claseId&&h.dia===ejSlot.dia&&h.hora===ejSlot.hora;
             const isSeleccionado=_modifNuevoSlot&&_modifNuevoSlot.claseId===h.claseId;
@@ -820,11 +862,14 @@ function abrirModalModificar(sk){
               </div>
             </div>`;
         });
-        html+='</div>';
+        html+='</div></div>';
     });
     list.innerHTML=html||'<p style="text-align:center;color:var(--txt2);font-size:.8rem;padding:2rem">Sin horarios disponibles</p>';
-    const btnAplicar=$('btn-aplicar-modif');if(btnAplicar)btnAplicar.disabled=true;
-    $('modalModificar').style.display='flex';
+}
+
+function toggleModifAccordion(nombre){
+    _modifAccordion[nombre]=!_modifAccordion[nombre];
+    _renderModifList();
 }
 
 function seleccionarNuevoSlot(h){
@@ -848,7 +893,7 @@ function seleccionarNuevoSlot(h){
 
 function cerrarModalModificar(){
     $('modalModificar').style.display='none';
-    _modifSlotKey=null;_modifNuevoSlot=null;
+    _modifSlotKey=null;_modifNuevoSlot=null;_modifEjSlot=null;_modifAccordion={};
 }
 
 async function aplicarModificacion(){
@@ -1250,8 +1295,23 @@ async function cancelarOrden(){if(!confirm('¿Cancelar la orden pendiente?'))ret
 // HELPERS DE TIEMPO (zona horaria México)
 // ════════════════════════════════════════════════════════════════
 function ahoraMX(){
-    const str=new Date().toLocaleString('es-MX',{timeZone:'America/Mexico_City'});
-    return new Date(str);
+    // Retorna un Date cuya "hora local" equivale a America/Mexico_City
+    // Usa Intl.DateTimeFormat con partes para evitar problemas de formato entre navegadores
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Mexico_City',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    }).formatToParts(now);
+    const get = type => parts.find(p => p.type === type)?.value || '0';
+    const y = parseInt(get('year'));
+    const mo = parseInt(get('month')) - 1;
+    const d = parseInt(get('day'));
+    const h = parseInt(get('hour')) % 24; // algunas implementaciones devuelven 24 para medianoche con hour12:false
+    const mi = parseInt(get('minute'));
+    const s = parseInt(get('second'));
+    return new Date(y, mo, d, h, mi, s, 0);
 }
 function diaSemana(d){
     // Retorna nombre del día en español
