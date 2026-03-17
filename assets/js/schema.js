@@ -18,13 +18,21 @@
  *   estatus ('INACTIVO'|'ACTIVO'), inscripcionPagada (bool),
  *   primerAcceso (bool), password, ultimoPago
  *
- * reservas/{id}
+ * reservas/{id}   (id determinístico para plan semanal: alumnoId_WweekStart_claseId_dia_hora)
  *   alumnoId, alumnoNombre, claseId, claseNombre, area,
- *   folio, estado ('pre-reserva'|'confirmada'),
+ *   folio, estado ('pre-reserva'|'pendiente_pago'|'confirmada'|'cancelada'),
  *   alertaMostrada (bool), fechaConfirmacion,
  *   frecuenciaSem (number|null), timestamp (number ms),
  *   dia, hora (HH:MM), horaFin (HH:MM), profesor,
- *   pasesTotal (number), pasesRestantes (number)
+ *   pasesTotal (number), pasesRestantes (number),
+ *   --- Campos Etapa 2 (plan semanal) ---
+ *   planSemanal (bool),           // true para reservas creadas con el nuevo flujo
+ *   slotKey (string),             // alumnoId_claseId_dia_hora (agrupa las 3 semanas)
+ *   weekStart (YYYY-MM-DD),       // lunes de la semana (fecha de inicio)
+ *   semanaIndex (0|1|2),          // 0=semana actual, 1=semana+1, 2=semana+2
+ *   fechaClase (YYYY-MM-DD),      // fecha real de la sesión
+ *   startAt (Firestore Timestamp),// inicio exacto en America/Mexico_City
+ *   endAt (Firestore Timestamp),  // fin exacto (opcional)
  *
  * pagos/{id}
  *   alumnoId, nombre, monto, detalle, folio,
@@ -55,8 +63,10 @@ var COL = {
 };
 
 var ESTADO_RESERVA = {
-  PRE_RESERVA: 'pre-reserva',
-  CONFIRMADA:  'confirmada'
+  PRE_RESERVA:     'pre-reserva',
+  PENDIENTE_PAGO:  'pendiente_pago',
+  CONFIRMADA:      'confirmada',
+  CANCELADA:       'cancelada'
 };
 
 var ESTATUS_ALUMNO = {
