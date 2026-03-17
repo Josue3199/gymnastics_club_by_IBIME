@@ -829,7 +829,7 @@ db.collection('pagos').where('fechaString','==',hoyStr).onSnapshot(snap=>{
     let total=0,ef=0,tf=0;
     snap.forEach(d=>{const p=d.data();total+=(p.monto||0);if(p.metodo==='EFECTIVO')ef+=(p.monto||0);else tf+=(p.monto||0);});
     const fmt=n=>'$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
-    $('dIngreso').textContent=fmt(total);
+    const di=$('dIngreso');if(di)di.textContent=fmt(total);
     const sub=$('dIngresoSub');if(sub)sub.textContent=snap.size+' cobro'+(snap.size!==1?'s':'')+' · 💵'+fmt(ef)+' · 🏦'+fmt(tf-ef<0?0:tf);
     const hc=$('dIngresoHoyCard');if(hc)hc.textContent=fmt(total);
     const choy=$('dCobrosHoy');if(choy)choy.textContent=snap.size;
@@ -1487,6 +1487,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     const mesActual=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
     const fi=$('filtroMesIngr');if(fi)fi.value=mesActual;
     setInterval(()=>$('reloj').textContent=new Date().toLocaleTimeString('es-MX'),1000);
+});
 let ingresosDesbloqueado = false;
 function abrirIngresos() {
   if (ingresosDesbloqueado) { showView('ingresos', document.getElementById('sbIngresos')); return; }
@@ -1675,6 +1676,7 @@ async function cargarHorarioDia() {
       </div>
     `).join('');
   } catch(e) { toast('❌ ' + e.message); $('horarioClases').innerHTML = ''; }
+}
 </script>
 
 <div id="view-horario" class="view">
