@@ -302,8 +302,10 @@ function loadAlumnos(claseId) {
   // Cancelar listener anterior
   if (_unsubAlumnos) { _unsubAlumnos(); _unsubAlumnos = null; }
 
-  // Obtener fecha de hoy en MX para filtrar sesiones del plan semanal
+  // Obtener fecha de hoy y fecha límite (+7 días) en MX para filtrar sesiones del plan semanal
   const hoyMX = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }); // YYYY-MM-DD
+  const fechaLimite = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)
+    .toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }); // YYYY-MM-DD
 
   _unsubAlumnos = db.collection('reservas')
     .where('claseId', '==', claseId)
@@ -313,7 +315,7 @@ function loadAlumnos(claseId) {
       // Si no tiene fechaClase (legacy), mostrarla siempre.
       const todas = [];
       snap.forEach(doc => todas.push({ id: doc.id, ...doc.data() }));
-      alumnosActuales = todas.filter(a => !a.fechaClase || a.fechaClase === hoyMX);
+      alumnosActuales = todas.filter(a => !a.fechaClase || (a.fechaClase >= hoyMX && a.fechaClase <= fechaLimite));
 
       document.getElementById('student-count').textContent = `${alumnosActuales.length} alumno${alumnosActuales.length !== 1 ? 's' : ''}`;
 

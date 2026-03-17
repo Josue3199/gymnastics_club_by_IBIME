@@ -698,7 +698,7 @@ function renderResumen(){
       </div>`).join('');
 }
 
-// ── Confirmar plan semanal → crear reservas para 3 semanas ────
+// ── Confirmar plan semanal → crear reservas para 5 semanas ────
 async function confirmarPlanSemanal(){
     if(SLOTS_SEL.length<PLAN_Y){toast('⚠️ Selecciona '+PLAN_Y+' horarios');return;}
     if(ORDEN_ACTIVA){toast('⚠️ Tienes un pago pendiente. Cancela la orden anterior primero.');return;}
@@ -717,11 +717,22 @@ async function confirmarPlanSemanal(){
         const esFit=AREA_SEL==='fitness';
         const tabla=esFit?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
         const precio=tabla[PLAN_Y]||tabla[4];
-        const ws0=weekStartMX();
+
+        // Semana de arranque inteligente: si algún slot de la semana actual
+        // cae dentro de las próximas 12 horas, empezar desde la semana siguiente.
+        const ws0base=weekStartMX();
+        const cutoffMs=ahoraMX().getTime()+12*60*60*1000;
+        const semanaActualYaBloqueada=SLOTS_SEL.some(slot=>{
+            const fechaClase=fechaParaDia(ws0base,slot.dia);
+            const startAt=mxToTimestamp(toYYYYMMDD(fechaClase),slot.hora);
+            return startAt.getTime()<=cutoffMs;
+        });
+        const ws0=semanaActualYaBloqueada?addDaysMX(ws0base,7):ws0base;
+
         const batch=db.batch();
 
         SLOTS_SEL.forEach(slot=>{
-            for(let si=0;si<3;si++){
+            for(let si=0;si<5;si++){
                 const ws=addDaysMX(ws0,si*7);
                 const wsStr=toYYYYMMDD(ws);
                 const fechaClase=fechaParaDia(ws,slot.dia);
@@ -765,7 +776,7 @@ async function confirmarPlanSemanal(){
         // Reset
         SLOTS_SEL=[];AREA_SEL=null;_slotAccordion={};
         volverPaso(1);
-        toast('✅ Reservas creadas para 3 semanas. Paga en recepción para confirmar.',5000);
+        toast('✅ Reservas creadas para 5 semanas. Paga en recepción para confirmar.',5000);
         navTo('misclases');
     }catch(e){toast('❌ '+e.message,4000);}
     finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check-circle" style="margin-right:8px"></i>Confirmar y reservar';}}
