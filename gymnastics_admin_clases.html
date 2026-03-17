@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-init.js"></script>
+<script src="assets/js/schema.js"></script>
 <style>
 :root{
   --bg:#080c14;--surface:#0e1520;--surface2:#111827;
@@ -382,8 +384,7 @@ select,input{font-family:'DM Sans',sans-serif}
 
 <script>
 // ── FIREBASE ──────────────────────────────────────────────────────
-const FIREBASE_CONFIG={apiKey:"AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",authDomain:"gymnastics-club-by-ibime.firebaseapp.com",databaseURL:"https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",projectId:"gymnastics-club-by-ibime",appId:"1:849277925066:web:6ef91b240277fe24846633"};
-firebase.initializeApp(FIREBASE_CONFIG);
+// Inicializado por assets/js/firebase-init.js
 const db=firebase.firestore();
 
 // ── TOAST ─────────────────────────────────────────────────────────

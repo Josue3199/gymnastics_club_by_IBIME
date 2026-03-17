@@ -10,6 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="assets/js/firebase-init.js"></script>
+<script src="assets/js/schema.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -521,17 +523,8 @@ html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color
      JAVASCRIPT
 ════════════════════════════════════════════════ -->
 <script>
-// ─── FIREBASE CONFIG ─────────────────────────────
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",
-  authDomain: "gymnastics-club-by-ibime.firebaseapp.com",
-  databaseURL: "https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",
-  projectId: "gymnastics-club-by-ibime",
-  storageBucket: "gymnastics-club-by-ibime.firebasestorage.app",
-  messagingSenderId: "690587849706",
-  appId: "1:690587849706:web:54f1d4df98d47c80affc62"
-};
-firebase.initializeApp(FIREBASE_CONFIG);
+// ─── FIREBASE ────────────────────────────────────
+// Inicializado por assets/js/firebase-init.js
 const db = firebase.firestore();
 
 // ─── HELPERS ─────────────────────────────────────
@@ -547,6 +540,9 @@ let claseActual = null;
 let alumnosActuales = [];
 let asistenciaMap = {};   // alumnoId -> 'presente'|'ausente'|'tarde'|'justificado'
 let qrScanner = null;
+// Unsubscribe handles for real-time listeners
+let _unsubClases = null;
+let _unsubAlumnos = null;
 const hoy = new Date().toISOString().split('T')[0];
 
 // ─── CLOCK ───────────────────────────────────────
@@ -655,8 +651,7 @@ async function doLogin() {
     appEl.classList.add('visible');
 
     toast(`Bienvenido, ${profesorActual.nombre}!`, 'success');
-    await loadClasesProfesor();
-    await loadDashboardStats();
+    loadClasesProfesor(); // inicia listener en tiempo real (no necesita await)
   } catch (e) {
     console.error('Error en login:', e);
     toast('Error al iniciar sesión: ' + e.message, 'error');
@@ -665,6 +660,9 @@ async function doLogin() {
 
 // ─── LOGOUT ──────────────────────────────────────
 function doLogout() {
+  // Cancelar listeners en tiempo real
+  if (_unsubClases) { _unsubClases(); _unsubClases = null; }
+  if (_unsubAlumnos) { _unsubAlumnos(); _unsubAlumnos = null; }
   profesorActual = null;
   clasesProfesor = [];
   claseActual = null;
@@ -676,80 +674,77 @@ function doLogout() {
   toast('Sesión cerrada', 'info');
 }
 
-// ─── LOAD CLASSES ─────────────────────────────────
-async function loadClasesProfesor() {
+// ─── LOAD CLASSES (real-time) ─────────────────────
+function loadClasesProfesor() {
   const sbEl = document.getElementById('sb-classes');
   const dashEl = document.getElementById('dashboard-classes');
   sbEl.innerHTML = '<div class="loading"><i class="fas fa-circle-notch spin"></i></div>';
   dashEl.innerHTML = '<div class="loading"><i class="fas fa-circle-notch spin"></i></div>';
 
-  try {
-    // Query by 'profesor' field (name match)
-    const snap = await db.collection('catalogo')
-      .where('tipo', '==', 'clase')
-      .where('profesor', '==', profesorActual.nombre)
-      .get();
+  // Cancelar listener anterior si existe
+  if (_unsubClases) { _unsubClases(); _unsubClases = null; }
 
-    clasesProfesor = [];
-    snap.forEach(doc => clasesProfesor.push({ id: doc.id, ...doc.data() }));
-
-    // Also try profesorId field as fallback
-    if (clasesProfesor.length === 0) {
-      const snap2 = await db.collection('catalogo')
-        .where('tipo', '==', 'clase')
-        .where('profesorId', '==', profesorActual.id)
-        .get();
-      snap2.forEach(doc => clasesProfesor.push({ id: doc.id, ...doc.data() }));
-    }
-
-    // Render sidebar
-    if (clasesProfesor.length === 0) {
-      sbEl.innerHTML = '<div class="sb-empty"><i class="fas fa-calendar-times" style="display:block;font-size:1.5rem;margin-bottom:8px;opacity:.4"></i>Sin clases asignadas</div>';
-      dashEl.innerHTML = '<div class="student-empty">No tienes clases asignadas. Verifica con el administrador.</div>';
-      return;
-    }
-
-    sbEl.innerHTML = '';
-    clasesProfesor.forEach(c => {
-      const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
-      sbEl.innerHTML += `
-        <div class="sb-class-item" id="sb-item-${esc(c.id)}" onclick="selectClass('${esc(c.id)}')">
-          <div class="sb-class-icon">${esc(c.icon) || '🏋️'}</div>
-          <div class="sb-class-info">
-            <div class="sb-class-name">${esc(c.nombre) || 'Sin nombre'}</div>
-            <div class="sb-class-meta">${esc(c.dia)} · ${esc(c.inicio)}–${esc(c.fin)}</div>
-          </div>
-          <div class="sb-class-badge">${inscritos}</div>
-        </div>`;
+  _unsubClases = db.collection('catalogo')
+    .where('tipo', '==', 'clase')
+    .where('profesor', '==', profesorActual.nombre)
+    .onSnapshot(snap => {
+      clasesProfesor = [];
+      snap.forEach(doc => clasesProfesor.push({ id: doc.id, ...doc.data() }));
+      _renderClasesProfesor(sbEl, dashEl);
+      loadDashboardStats();
+    }, err => {
+      console.error('Error cargando clases:', err);
+      toast('Error cargando clases: ' + err.message, 'error');
+      sbEl.innerHTML = '<div class="sb-empty">Error al cargar</div>';
     });
+}
 
-    // Render dashboard cards
-    dashEl.innerHTML = '';
-    clasesProfesor.forEach(c => {
-      const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
-      const pct = c.cupo ? Math.round((inscritos / c.cupo) * 100) : 0;
-      dashEl.innerHTML += `
-        <div class="class-card fade-up" onclick="selectClass('${esc(c.id)}')">
-          <div class="class-card-top">
-            <div class="class-card-icon">${esc(c.icon) || '🏋️'}</div>
-            <div class="class-card-badge">${inscritos} inscritos</div>
-          </div>
-          <div class="class-card-name">${esc(c.nombre) || 'Sin nombre'}</div>
-          <div class="class-card-meta">
-            <span><i class="fas fa-calendar-week"></i>${esc(c.dia) || '—'}</span>
-            <span><i class="fas fa-clock"></i>${esc(c.inicio) || '?'}–${esc(c.fin) || '?'}</span>
-          </div>
-          <div class="class-card-footer">
-            <div style="font-size:.75rem;color:var(--txt2)">${pct}% ocupación</div>
-            <button class="class-card-btn">Ver detalle →</button>
-          </div>
-        </div>`;
-    });
+function _renderClasesProfesor(sbEl, dashEl) {
+  if (clasesProfesor.length === 0) {
+    sbEl.innerHTML = '<div class="sb-empty"><i class="fas fa-calendar-times" style="display:block;font-size:1.5rem;margin-bottom:8px;opacity:.4"></i>Sin clases asignadas</div>';
+    dashEl.innerHTML = '<div class="student-empty">No tienes clases asignadas. Verifica con el administrador.</div>';
+    return;
+  }
 
-  } catch (e) {
-    console.error('Error cargando clases:', e);
-    toast('Error cargando clases: ' + e.message, 'error');
-    sbEl.innerHTML = '<div class="sb-empty">Error al cargar</div>';
+  sbEl.innerHTML = '';
+  clasesProfesor.forEach(c => {
+    const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
+    sbEl.innerHTML += `
+      <div class="sb-class-item" id="sb-item-${esc(c.id)}" onclick="selectClass('${esc(c.id)}')">
+        <div class="sb-class-icon">${esc(c.icon) || '🏋️'}</div>
+        <div class="sb-class-info">
+          <div class="sb-class-name">${esc(c.nombre) || 'Sin nombre'}</div>
+          <div class="sb-class-meta">${esc(c.dia)} · ${esc(c.inicio)}–${esc(c.fin)}</div>
+        </div>
+        <div class="sb-class-badge">${inscritos}</div>
+      </div>`;
+  });
+
+  dashEl.innerHTML = '';
+  clasesProfesor.forEach(c => {
+    const inscritos = (c.cupo || 0) - (c.cupoDisponible || 0);
+    const pct = c.cupo ? Math.round((inscritos / c.cupo) * 100) : 0;
+    dashEl.innerHTML += `
+      <div class="class-card fade-up" onclick="selectClass('${esc(c.id)}')">
+        <div class="class-card-top">
+          <div class="class-card-icon">${esc(c.icon) || '🏋️'}</div>
+          <div class="class-card-badge">${inscritos} inscritos</div>
+        </div>
+        <div class="class-card-name">${esc(c.nombre) || 'Sin nombre'}</div>
+        <div class="class-card-meta">
+          <span><i class="fas fa-calendar-week"></i>${esc(c.dia) || '—'}</span>
+          <span><i class="fas fa-clock"></i>${esc(c.inicio) || '?'}–${esc(c.fin) || '?'}</span>
+        </div>
+        <div class="class-card-footer">
+          <div style="font-size:.75rem;color:var(--txt2)">${pct}% ocupación</div>
+          <button class="class-card-btn">Ver detalle →</button>
+        </div>
+      </div>`;
+  });
+  // Actualizar el estado activo del sidebar si hay una clase seleccionada
+  if (claseActual) {
+    const sbItem = document.getElementById('sb-item-' + claseActual.id);
+    if (sbItem) sbItem.classList.add('active');
   }
 }
 
@@ -813,59 +808,70 @@ async function selectClass(claseId) {
   resetCounters();
   clearComments();
 
-  await loadAlumnos(claseId);
+  loadAlumnos(claseId); // listener en tiempo real (no necesita await)
   await loadCommentHistory(claseId);
 }
 
 // ─── LOAD STUDENTS ────────────────────────────────
-async function loadAlumnos(claseId) {
+function loadAlumnos(claseId) {
   const cont = document.getElementById('students-container');
   cont.innerHTML = '<div class="student-empty"><i class="fas fa-circle-notch spin"></i> Cargando alumnos...</div>';
 
-  try {
-    const snap = await db.collection('reservas')
-      .where('claseId', '==', claseId)
-      .where('estado', '==', 'confirmada')
-      .get();
+  // Cancelar listener anterior
+  if (_unsubAlumnos) { _unsubAlumnos(); _unsubAlumnos = null; }
 
-    alumnosActuales = [];
-    snap.forEach(doc => alumnosActuales.push({ id: doc.id, ...doc.data() }));
+  _unsubAlumnos = db.collection('reservas')
+    .where('claseId', '==', claseId)
+    .where('estado', '==', 'confirmada')
+    .onSnapshot(snap => {
+      alumnosActuales = [];
+      snap.forEach(doc => alumnosActuales.push({ id: doc.id, ...doc.data() }));
 
-    document.getElementById('student-count').textContent = `${alumnosActuales.length} alumno${alumnosActuales.length !== 1 ? 's' : ''}`;
+      document.getElementById('student-count').textContent = `${alumnosActuales.length} alumno${alumnosActuales.length !== 1 ? 's' : ''}`;
 
-    if (!alumnosActuales.length) {
-      cont.innerHTML = '<div class="student-empty"><i class="fas fa-user-slash" style="font-size:1.5rem;opacity:.4;display:block;margin-bottom:8px"></i>No hay alumnos inscritos con estado confirmado</div>';
-      return;
-    }
+      if (!alumnosActuales.length) {
+        cont.innerHTML = '<div class="student-empty"><i class="fas fa-user-slash" style="font-size:1.5rem;opacity:.4;display:block;margin-bottom:8px"></i>No hay alumnos inscritos con estado confirmado</div>';
+        return;
+      }
 
-    cont.innerHTML = '';
-    alumnosActuales.forEach(a => {
-      const aId = esc(a.alumnoId || a.id);
-      const rawId = a.alumnoId || a.id;
-      const inicial = (a.alumnoNombre || 'A').charAt(0).toUpperCase();
-      asistenciaMap[rawId] = null;
-      cont.innerHTML += `
-        <div class="student-row" id="row-${aId}">
-          <div class="student-avatar">${esc(inicial)}</div>
-          <div class="student-info">
-            <div class="student-name">${esc(a.alumnoNombre) || 'Sin nombre'}</div>
-            <div class="student-id">ID: ${aId}</div>
-          </div>
-          <div class="student-badges">
-            <div class="badge badge-presente" onclick="setAsistencia('${aId}','presente',this)">✓ Presente</div>
-            <div class="badge badge-ausente" onclick="setAsistencia('${aId}','ausente',this)">✗ Ausente</div>
-            <div class="badge badge-tarde" onclick="setAsistencia('${aId}','tarde',this)">⏰ Tarde</div>
-            <div class="badge badge-justificado" onclick="setAsistencia('${aId}','justificado',this)">📋 Justificado</div>
-          </div>
-        </div>`;
+      cont.innerHTML = '';
+      alumnosActuales.forEach(a => {
+        const aId = esc(a.alumnoId || a.id);
+        const rawId = a.alumnoId || a.id;
+        const inicial = (a.alumnoNombre || 'A').charAt(0).toUpperCase();
+        // Preservar asistencia ya marcada en esta sesión
+        if (asistenciaMap[rawId] === undefined) asistenciaMap[rawId] = null;
+        const horarioMeta = (a.dia && a.hora)
+          ? `<div class="student-id" style="margin-top:2px">📅 ${esc(a.dia)} ${esc(a.hora)}${a.horaFin?' – '+esc(a.horaFin):''}</div>`
+          : '';
+        const pasesInfo = (typeof a.pasesRestantes === 'number' && a.pasesTotal)
+          ? `<div class="student-id" style="color:#f59e0b">🎫 ${a.pasesRestantes}/${a.pasesTotal} pases</div>`
+          : '';
+        cont.innerHTML += `
+          <div class="student-row" id="row-${aId}">
+            <div class="student-avatar">${esc(inicial)}</div>
+            <div class="student-info">
+              <div class="student-name">${esc(a.alumnoNombre) || 'Sin nombre'}</div>
+              <div class="student-id">ID: ${aId}</div>
+              ${horarioMeta}
+              ${pasesInfo}
+            </div>
+            <div class="student-badges">
+              <div class="badge badge-presente${asistenciaMap[rawId]==='presente'?' active':''}" onclick="setAsistencia('${aId}','presente',this)">✓ Presente</div>
+              <div class="badge badge-ausente${asistenciaMap[rawId]==='ausente'?' active':''}" onclick="setAsistencia('${aId}','ausente',this)">✗ Ausente</div>
+              <div class="badge badge-tarde${asistenciaMap[rawId]==='tarde'?' active':''}" onclick="setAsistencia('${aId}','tarde',this)">⏰ Tarde</div>
+              <div class="badge badge-justificado${asistenciaMap[rawId]==='justificado'?' active':''}" onclick="setAsistencia('${aId}','justificado',this)">📋 Justificado</div>
+            </div>
+          </div>`;
+      });
+
+      updateCounters();
+      loadDashboardStats();
+    }, err => {
+      console.error('Error cargando alumnos:', err);
+      toast('Error cargando alumnos: ' + err.message, 'error');
+      cont.innerHTML = '<div class="student-empty">Error al cargar alumnos</div>';
     });
-
-    updateCounters();
-  } catch (e) {
-    console.error('Error cargando alumnos:', e);
-    toast('Error cargando alumnos: ' + e.message, 'error');
-    cont.innerHTML = '<div class="student-empty">Error al cargar alumnos</div>';
-  }
 }
 
 // ─── ATTENDANCE BADGE ─────────────────────────────
@@ -925,6 +931,7 @@ async function saveAttendance() {
       const id = a.alumnoId || a.id;
       const tipo = asistenciaMap[id];
       if (!tipo) return;
+      // Registrar asistencia
       const ref = db.collection('asistencias').doc();
       batch.set(ref, {
         alumnoId: id,
@@ -937,6 +944,16 @@ async function saveAttendance() {
         hora,
         tipo,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // Descontar 1 pase de la reserva (política estricta: se descuenta siempre,
+      // asistió o no asistió). Actualizar también el flag de asistencia/falta.
+      // asistencia=true si presente o tarde; falta=true si ausente o justificado.
+      const reservaRef = db.collection('reservas').doc(a.id);
+      const asistioFlag = tipo === 'presente' || tipo === 'tarde';
+      batch.update(reservaRef, {
+        pasesRestantes: firebase.firestore.FieldValue.increment(-1),
+        asistencia: asistioFlag,
+        falta: !asistioFlag
       });
       saved++;
     });
