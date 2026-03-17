@@ -1347,7 +1347,7 @@ function renderMisClases(){
                 return puedeModificar(sat);
             });
             const modificarBtn=haveModifiable
-                ?`<button onclick="abrirModalModificar('${sk.replace(/'/g,'\\\'')}')" style="font-size:.62rem;font-weight:800;background:var(--azul);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;white-space:nowrap"><i class="fa-solid fa-pen" style="margin-right:4px"></i>Modificar</button>`
+                ?`<button onclick="abrirModalModificar('${sk.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')}')" style="font-size:.62rem;font-weight:800;background:var(--azul);color:white;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;white-space:nowrap"><i class="fa-solid fa-pen" style="margin-right:4px"></i>Modificar</button>`
                 :'<span style="font-size:.62rem;font-weight:700;color:#94a3b8;background:#f1f5f9;border-radius:8px;padding:4px 10px">🔒 Bloqueado</span>';
 
             html+='<div class="card" style="padding:1rem;margin-bottom:.75rem">'
