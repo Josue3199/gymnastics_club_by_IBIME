@@ -918,7 +918,7 @@ async function cargarIngresosHist() {
     const dIngresoMes = $('dIngresoMes'); if (dIngresoMes) dIngresoMes.textContent = fmt(totalMes);
     window._ingresosCache = porDia;
     $('tablaIngresos').innerHTML = dias.map(dia => `
-      <div onclick="mostrarDetalleDia('${dia.replace(/'/g,"\\'")}')"
+      <div onclick="mostrarDetalleDia('${dia.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
            style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s"
            onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='var(--border)'">
         <div>
