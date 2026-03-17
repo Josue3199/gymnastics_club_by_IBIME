@@ -960,7 +960,7 @@ function selArea(area){
     bc.className='btn-add '+(area==='fitness'?'fit':'gym');
     // Modification window check
     const _ahora = ahoraMX();
-    const _dia = _ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar
+    const _dia = _ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
     const _tieneConfirmadas = MIS_RESERVAS.filter(r => r.estado === 'confirmada').length >= 2;
     if (_tieneConfirmadas && _dia !== 1 && _dia !== 2) {
         toast('⚠️ Los horarios solo pueden modificarse Lunes y Martes. Aún puedes agregar clases nuevas.', 5000);

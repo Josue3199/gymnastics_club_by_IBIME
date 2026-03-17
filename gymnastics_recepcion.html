@@ -1132,7 +1132,7 @@ function actualizarCajaCarritoTotal() {
   if (_cajaInscCheck) total += 800;
   Object.values(_cajaCartItems).forEach(c => total += (c.precio || 0));
   const totalEl = $('cajaCartTotalVal');
-  if (totalEl) totalEl.textContent = '$' + total.toLocaleString('es-MX', {minimumFractionDigits:2});
+  if (totalEl) totalEl.textContent = '$' + total.toLocaleString('es-MX', {minimumFractionDigits:2,maximumFractionDigits:2});
   const totalRow = $('cajaCarritoTotal');
   if (totalRow) totalRow.style.display = total > 0 ? 'flex' : 'none';
 }
