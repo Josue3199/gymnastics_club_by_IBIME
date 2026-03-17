@@ -12,6 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="assets/js/firebase-init.js"></script>
+<script src="assets/js/schema.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--azul:#1e3a6e;--azul2:#264971;--rojo:#c8382a;--rojo2:#a02220;--bg:#f0f4fa;--sidebar:#0c1828;--border:#e2e8f0;--txt:#1a2540;--txt2:#64748b}
@@ -634,7 +636,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 // ════════════════════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════════════════════
-const FIREBASE_CONFIG={apiKey:"AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",authDomain:"gymnastics-club-by-ibime.firebaseapp.com",databaseURL:"https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",projectId:"gymnastics-club-by-ibime",appId:"1:849277925066:web:6ef91b240277fe24846633"};
+// Firebase inicializado por assets/js/firebase-init.js
 const URL_GAS="https://script.google.com/macros/s/AKfycbwZg7nmuTA27A3rT6Pn6uDyfB4eyzbrFP5js09VNC1L-iMqG__DIvlFS59oH90HHu1Q/exec";
 const INSCRIPCION_MONTO=800;
 // Paquetes: clases → {n: precio normal, p: precio pronto pago}
@@ -643,7 +645,6 @@ const PAQUETES_GIMNASIA ={1:{n:850,p:765},2:{n:1600,p:1440},3:{n:2200,p:1980},4:
 const PKG_OPTS=[1,2,3,4,5];
 const $=id=>document.getElementById(id);
 
-firebase.initializeApp(FIREBASE_CONFIG);
 const db=firebase.firestore(),rtdb=firebase.database();
 
 let USER=null,CART=[],CATALOGO=[],MIS_RESERVAS=[],ORDEN_ACTIVA=null;
@@ -1080,7 +1081,8 @@ function agregarAlCarrito(){
 // ════════════════════════════════════════════════════════════════
 // MODAL HORARIOS
 // ════════════════════════════════════════════════════════════════
-let _horariosSeleccionados={}; // { claseId: { horarioId, dia, hora, horaFin, profesor } }
+// _horariosSeleccionados: { [disciplinaNombre]: { claseId, dia, hora, horaFin, profesor } }
+let _horariosSeleccionados={};
 
 function abrirModalHorarios(){
     _horariosSeleccionados={};
@@ -1088,37 +1090,74 @@ function abrirModalHorarios(){
     lista.innerHTML='';
     const disciplinaIds=[...DISCIPS_SEL];
     let hayHorarios=false;
+
+    // Agrupar los doc IDs por nombre de disciplina
+    const porNombre={};
     disciplinaIds.forEach(cid=>{
         const clase=CATALOGO.find(c=>c.id===cid);
         if(!clase)return;
-    const horarios=(clase.horarios||[]).filter(h=>typeof h.cupoMax!=='number'||h.cupoActual<h.cupoMax);
+        const nombre=clase.nombre||cid;
+        if(!porNombre[nombre])porNombre[nombre]=[];
+        porNombre[nombre].push(clase);
+    });
+
+    Object.entries(porNombre).forEach(([nombre,clases])=>{
+        const primeraCl=clases[0];
         const div=document.createElement('div');
         div.style.cssText='margin-bottom:1.2rem';
         div.innerHTML='<p style="font-weight:900;font-size:.82rem;text-transform:uppercase;margin-bottom:.5rem;color:#1a2540">'+
-            (clase.icon||'🏋️')+' '+(clase.nombre||cid)+'</p>';
-        if(!horarios.length){
+            (primeraCl.icon||'🏋️')+' '+nombre+'</p>';
+
+        // Construir lista de horarios: primero usar clase.horarios[] si existe,
+        // si no, sintetizar un horario desde los campos del documento (dia, inicio, fin).
+        const allHorarios=[];
+        clases.forEach(cl=>{
+            if(cl.horarios&&cl.horarios.length){
+                cl.horarios.forEach(h=>allHorarios.push({...h,_claseId:cl.id}));
+            } else if(cl.dia&&cl.inicio){
+                const cupoActual=(cl.cupo||0)-(cl.cupoDisponible??cl.cupo??0);
+                allHorarios.push({
+                    id:cl.id,
+                    dia:cl.dia,
+                    hora:cl.inicio,
+                    horaFin:cl.fin||'',
+                    profesor:cl.profesor||'',
+                    cupoMax:cl.cupo||null,
+                    cupoActual:cupoActual,
+                    _claseId:cl.id
+                });
+            }
+        });
+
+        const disponibles=allHorarios.filter(h=>!h.cupoMax||h.cupoActual<h.cupoMax);
+
+        if(!disponibles.length){
             div.innerHTML+='<p style="font-size:.72rem;color:#64748b;font-style:italic;padding:.5rem;background:#f8f9fa;border-radius:8px">Sin horarios disponibles</p>';
         } else {
             hayHorarios=true;
-            horarios.forEach(h=>{
+            disponibles.forEach(h=>{
+                const claseId=h._claseId;
                 const lleno=h.cupoMax&&h.cupoActual>=h.cupoMax;
                 const cupoTexto=h.cupoMax?(h.cupoMax-h.cupoActual)+'/'+h.cupoMax+' lugares':'Cupo disponible';
                 const btn=document.createElement('div');
-                btn.id='hor-'+cid+'-'+h.id;
+                btn.id='hor-'+claseId+'-'+(h.id||h._claseId);
                 btn.style.cssText='padding:.75rem;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:.4rem;cursor:'+(lleno?'not-allowed':'pointer')+';opacity:'+(lleno?'.55':'1')+';transition:all .2s;background:white';
                 btn.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
                     +'<div><p style="font-weight:800;font-size:.8rem">'+h.dia+' '+h.hora+(h.horaFin?' – '+h.horaFin:'')+'</p>'
-                    +'<p style="font-size:.68rem;color:#64748b;font-weight:600;margin-top:2px">👤 '+h.profesor+'</p></div>'
+                    +'<p style="font-size:.68rem;color:#64748b;font-weight:600;margin-top:2px">👤 '+(h.profesor||'Sin asignar')+'</p></div>'
                     +'<div style="text-align:right">'+(lleno?'<span style="background:#fef2f2;color:#ef4444;border-radius:6px;padding:2px 7px;font-size:.6rem;font-weight:800">Lleno</span>':'<span style="background:#f0fdf4;color:#16a34a;border-radius:6px;padding:2px 7px;font-size:.6rem;font-weight:700">'+cupoTexto+'</span>')
                     +'</div></div>';
                 if(!lleno){
                     btn.onclick=function(){
-                        // Deseleccionar otros de esta clase
-                        document.querySelectorAll('[id^="hor-'+cid+'-"]').forEach(el=>{
-                            el.style.borderColor='#e2e8f0';el.style.background='white';
+                        // Deseleccionar otros de esta disciplina
+                        clases.forEach(cl=>{
+                            document.querySelectorAll('[id^="hor-'+cl.id+'-"]').forEach(el=>{
+                                el.style.borderColor='#e2e8f0';el.style.background='white';
+                            });
                         });
                         this.style.borderColor='#1e3a6e';this.style.background='#eef3ff';
-                        _horariosSeleccionados[cid]={horarioId:h.id,dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||''};
+                        // Clave: nombre de la disciplina
+                        _horariosSeleccionados[nombre]={claseId:claseId,horarioId:h.id||claseId,dia:h.dia,hora:h.hora,horaFin:h.horaFin||'',profesor:h.profesor||''};
                     };
                 }
                 div.appendChild(btn);
@@ -1136,44 +1175,51 @@ function cerrarModalHorarios(){$('modalHorarios').classList.remove('on');}
 
 function confirmarHorarios(){
     const disciplinaIds=[...DISCIPS_SEL];
-    // Validar que haya un horario seleccionado por cada disciplina que tenga horarios
-    const claseConHorarios=disciplinaIds.filter(cid=>{
-        const clase=CATALOGO.find(c=>c.id===cid);
-        return clase&&(clase.horarios||[]).filter(h=>!h.cupoMax||h.cupoActual<h.cupoMax).length>0;
-    });
-    for(const cid of claseConHorarios){
-        if(!_horariosSeleccionados[cid]){
-            const clase=CATALOGO.find(c=>c.id===cid);
-            toast('⚠️ Selecciona un horario para: '+(clase?.nombre||cid));return;
-        }
-    }
     const tabla=AREA_SEL==='fitness'?PAQUETES_FITNESS:PAQUETES_GIMNASIA;
     const c=tabla[PKG]||tabla[4];
-    const esFit=AREA_SEL==='fitness';
-    // Quitar mensualidad anterior de esta área
-    CART=CART.filter(x=>!(x.tipo==='mensualidad'&&x.area===AREA_SEL));
-    const nombres=[...new Set(disciplinaIds.map(id=>{const it=CATALOGO.find(c=>c.id===id);return it?.nombre||'';}))];
-    // Crear ítems de clase individuales con horario
-    disciplinaIds.forEach(cid=>{
-        const clase=CATALOGO.find(c=>c.id===cid);if(!clase)return;
-        const h=_horariosSeleccionados[cid];
-        const nombreClase=(clase.nombre||cid)+(h?' — '+h.dia+' '+h.hora:'');
-        CART=CART.filter(x=>x.claseId!==cid);
+
+    // Calcular nombres únicos de disciplinas seleccionadas
+    const nombresUnicos=[...new Set(disciplinaIds.map(id=>{const it=CATALOGO.find(c=>c.id===id);return it?.nombre||'';}))].filter(Boolean);
+
+    // Validar que haya un horario seleccionado por cada disciplina que tenga al menos un slot disponible
+    for(const nombre of nombresUnicos){
+        // ¿Tiene slots disponibles esta disciplina?
+        const tieneSlots=disciplinaIds.some(cid=>{
+            const cl=CATALOGO.find(c=>c.id===cid&&(c.nombre||cid)===nombre);
+            if(!cl)return false;
+            if(cl.horarios&&cl.horarios.length)return cl.horarios.some(h=>!h.cupoMax||h.cupoActual<h.cupoMax);
+            return cl.dia&&cl.inicio&&(cl.cupoDisponible??cl.cupo??1)>0;
+        });
+        if(tieneSlots&&!_horariosSeleccionados[nombre]){
+            toast('⚠️ Selecciona un horario para: '+nombre);return;
+        }
+    }
+
+    // Quitar clases anteriores de esta área del carrito
+    CART=CART.filter(x=>!(x.tipo==='clase'&&x.area===AREA_SEL));
+
+    // Agregar un ítem por cada disciplina con su horario seleccionado
+    nombresUnicos.forEach(nombre=>{
+        const h=_horariosSeleccionados[nombre];
+        if(!h)return; // disciplina sin slots, omitir
+        const clase=CATALOGO.find(c=>c.id===h.claseId);
+        if(!clase)return;
+        const nombreClase=nombre+(h?' — '+h.dia+' '+h.hora:'');
         CART.push({
-            id:'CLASE_'+cid,
+            id:'CLASE_'+h.claseId,
             nombre:nombreClase,
-            profesor:h?.profesor||'',
-            disciplina:clase.nombre||cid,
-            horarioId:h?.horarioId||'',
-            claseId:cid,
+            profesor:h.profesor||'',
+            disciplina:nombre,
+            horarioId:h.horarioId||h.claseId,
+            claseId:h.claseId,
             area:AREA_SEL,
             frecuencia:PKG,
             precio:c.p,
             icon:clase.icon||'🏋️',
             tipo:'clase',
-            dia:h?.dia||'',
-            hora:h?.hora||'',
-            horaFin:h?.horaFin||''
+            dia:h.dia||'',
+            hora:h.hora||'',
+            horaFin:h.horaFin||''
         });
     });
     actualizarBadge();
@@ -1253,7 +1299,32 @@ async function confirmarOrden(){
             tx.set(ref,{ultimo_numero:num},{merge:true});
         });
         const folio='IBY-PAG-'+String(num).padStart(10,'0');
-        // Pre-reservar clases de mensualidades
+        // Pre-reservar clases tipo 'clase' (flujo normal desde horarios)
+        for(const item of CART.filter(i=>i.tipo==='clase'&&i.claseId)){
+            const cid=item.claseId;
+            const cl=CATALOGO.find(x=>x.id===cid);if(!cl)continue;
+            await db.runTransaction(async tx=>{
+                const ref=db.collection('catalogo').doc(cid);
+                const s=await tx.get(ref);if(!s.exists)return;
+                const disp=s.data().cupoDisponible??s.data().cupo??0;
+                if(disp>0)tx.update(ref,{cupoDisponible:firebase.firestore.FieldValue.increment(-1)});
+            });
+            await db.collection('reservas').add({
+                alumnoId:USER.id,alumnoNombre:USER.nombre,
+                claseId:cid,claseNombre:cl.nombre,area:cl.area||item.area,
+                folio,estado:'pre-reserva',alertaMostrada:false,timestamp:Date.now(),
+                frecuenciaSem:item.frecuencia||null,
+                // Información de horario para mostrar en "Mis Clases"
+                dia:item.dia||cl.dia||'',
+                hora:item.hora||cl.inicio||'',
+                horaFin:item.horaFin||cl.fin||'',
+                profesor:item.profesor||cl.profesor||'',
+                // Control de pases
+                pasesTotal:item.frecuencia||1,
+                pasesRestantes:item.frecuencia||1
+            });
+        }
+        // Pre-reservar clases de mensualidades (flujo legado)
         for(const item of CART.filter(i=>i.tipo==='mensualidad'&&i.clasesIds)){
             for(const cid of item.clasesIds){
                 const cl=CATALOGO.find(x=>x.id===cid);if(!cl)continue;
@@ -1267,7 +1338,10 @@ async function confirmarOrden(){
                     alumnoId:USER.id,alumnoNombre:USER.nombre,
                     claseId:cid,claseNombre:cl.nombre,area:cl.area||item.area,
                     folio,estado:'pre-reserva',alertaMostrada:false,timestamp:Date.now(),
-                    frecuenciaSem:item.frecuencia||null
+                    frecuenciaSem:item.frecuencia||null,
+                    dia:'',hora:'',horaFin:'',profesor:'',
+                    pasesTotal:item.frecuencia||1,
+                    pasesRestantes:item.frecuencia||1
                 });
             }
         }
@@ -1315,13 +1389,13 @@ function diaSemana(d){
 }
 function estadoClaseRT(r){
     if(r.asistencia===true)return{txt:'Asistencia registrada',cls:'badge-green',icon:'✅'};
-    if(r.falta===true)return{txt:'Falta registrada',cls:'badge-red',icon:'❌'};
+    if(r.falta===true)return{txt:'Falta registrada — pase descontado',cls:'badge-red',icon:'❌'};
     if(r.estado==='pre-reserva'||r.estado==='pendiente_pago')return{txt:'⏳ Pago pendiente',cls:'badge-amber',icon:'⏳'};
     if(r.estado!=='confirmada')return null; // no calcular para no confirmadas
     if(!r.dia||!r.hora)return{txt:'Confirmada',cls:'badge-green',icon:'✅'};
     const ahora=ahoraMX();
     const hoyDia=diaSemana(ahora);
-    if(hoyDia.toLowerCase().trim()!==String(r.dia||'').toLowerCase().trim())return{txt:'Otro día',cls:'badge-gray',icon:'📅'};
+    if(hoyDia.toLowerCase().trim()!==String(r.dia||'').toLowerCase().trim())return{txt:'Próxima sesión: '+r.dia,cls:'badge-gray',icon:'📅'};
     // Misma clase hoy
     const [hh,mm]=(r.hora||'00:00').split(':').map(Number);
     const inicioMin=hh*60+mm;
@@ -1329,10 +1403,10 @@ function estadoClaseRT(r){
     let finMin=inicioMin+60; // default 1 hora
     if(r.horaFin){const[fh,fm]=r.horaFin.split(':').map(Number);finMin=fh*60+fm;}
     const diffInicio=inicioMin-ahoraMin;
-    if(ahoraMin>=finMin)return{txt:'Ya transcurrió',cls:'badge-gray',icon:'🕒',extra:'Clase descontada de tu paquete (pendiente de confirmación por recepción)'};
-    if(diffInicio<=0&&ahoraMin<finMin)return{txt:'¡Es ahora! Entra ya',cls:'badge-now',icon:'🟢'};
-    if(diffInicio>0&&diffInicio<=30)return{txt:'¡Es ahora! Entra ya',cls:'badge-now',icon:'🟢'};
-    if(diffInicio>30)return{txt:'Próxima',cls:'badge-blue',icon:'🔵'};
+    if(ahoraMin>=finMin)return{txt:'Clase terminada — pase descontado',cls:'badge-red',icon:'🕒',extra:'Si no asististe se descuenta igual (política estricta). Consulta al profesor si marcó tu asistencia.'};
+    if(diffInicio<=0&&ahoraMin<finMin)return{txt:'Tu clase comenzó — ¡entra ya!',cls:'badge-now',icon:'🟢'};
+    if(diffInicio>0&&diffInicio<=30)return{txt:'Tu clase '+(r.claseNombre||'')+(r.hora?' inicia en ~'+diffInicio+' min':''),cls:'badge-now',icon:'🔔'};
+    if(diffInicio>30)return{txt:'Hoy '+r.hora+(r.horaFin?' – '+r.horaFin:''),cls:'badge-blue',icon:'🔵'};
     return{txt:'Confirmada',cls:'badge-green',icon:'✅'};
 }
 
@@ -1354,7 +1428,9 @@ function renderMisClases(){
         const extra=rt?.extra?'<p style="font-size:.6rem;color:#94a3b8;margin-top:.3rem;font-style:italic">'+rt.extra+'</p>':'';
         const preres=r.estado==='pre-reserva'||r.estado==='pendiente_pago';
         const cancelBtn=preres?('<button onclick="cancelarReserva(\''+r.rid+'\',' + '\''+r.claseId+'\')" style="font-size:.6rem;font-weight:800;color:#ef4444;background:none;border:none;cursor:pointer;text-transform:uppercase;padding:0;margin-top:.4rem"><i class="fa-solid fa-trash-can" style="margin-right:3px"></i>Cancelar pre-reserva</button>'):'';
-        const clasesInfo=(typeof r.clasesRestantes==='number'&&r.clasesPaquete)?
+        const clasesInfo=(typeof r.pasesRestantes==='number'&&r.pasesTotal)?
+            '<p style="font-size:.6rem;font-weight:700;color:#64748b">🎫 '+r.pasesRestantes+'/'+r.pasesTotal+' pases restantes</p>':
+            (typeof r.clasesRestantes==='number'&&r.clasesPaquete)?
             '<p style="font-size:.6rem;font-weight:700;color:#64748b">'+r.clasesRestantes+'/'+r.clasesPaquete+' clases restantes</p>':'';
         const horarioInfo=(r.dia&&r.hora)?('<p style="font-size:.65rem;font-weight:700;color:#64748b;margin-top:2px">'+r.dia+' '+r.hora+(r.horaFin?' – '+r.horaFin:'')+(r.profesor?' · 👤 '+r.profesor:'')+'</p>'):'';
         html+='<div class="card" style="padding:1rem;margin-bottom:.6rem">'
@@ -1386,19 +1462,28 @@ function checkClaseActual(){
         if(hoyDia.toLowerCase().trim()!==String(r.dia||'').toLowerCase().trim())return;
         const[hh,mm]=(r.hora||'00:00').split(':').map(Number);
         const inicioMin=hh*60+mm;
+        let finMin=inicioMin+60;
+        if(r.horaFin){const[fh,fm]=r.horaFin.split(':').map(Number);finMin=fh*60+fm;}
         const diffInicio=inicioMin-ahoraMin;
         const nombre=r.claseNombre||r.disciplina||'clase';
         const key30=r.rid+'_30';
         const keyNow=r.rid+'_now';
-        if(diffInicio>=25&&diffInicio<=30&&!_notifCache[key30]){
+        const keyEnd=r.rid+'_end';
+        if(diffInicio>=25&&diffInicio<=35&&!_notifCache[key30]){
             _notifCache[key30]=true;
-            toast('🔔 Tu clase de '+nombre+' empieza en ~30 min',5000);
+            toast('🔔 Tu clase de '+nombre+' inicia en ~'+diffInicio+' min',5000);
         }
-        if(diffInicio>=-2&&diffInicio<=2&&!_notifCache[keyNow]){
+        if(diffInicio<=0&&ahoraMin<finMin&&!_notifCache[keyNow]){
             _notifCache[keyNow]=true;
-            toast('⏰ ¡Tu clase de '+nombre+' empieza ahora!',5000);
+            toast('⏰ ¡Tu clase de '+nombre+' comenzó!',5000);
+        }
+        if(ahoraMin>=finMin&&!r.asistencia&&!r.falta&&!_notifCache[keyEnd]){
+            _notifCache[keyEnd]=true;
+            toast('🕒 Tu clase de '+nombre+' terminó. Se descontará un pase de tu paquete.',6000);
         }
     });
+    // Re-renderizar para actualizar badges de estado en tiempo real
+    renderMisClases();
 }
 
 async function cancelarReserva(rid,cid){

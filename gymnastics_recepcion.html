@@ -13,6 +13,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="assets/js/firebase-init.js"></script>
+<script src="assets/js/schema.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--azul:#1e3a6e;--azul2:#264971;--rojo:#c8382a;--bg:#f0f4fa;--sidebar:#0c1828;--border:#e2e8f0;--txt:#1a2540;--txt2:#64748b}
@@ -740,13 +742,12 @@ document.addEventListener('DOMContentLoaded',function(){
     });
   });
 });
-const FIREBASE_CONFIG={apiKey:"AIzaSyBxBmuQY5n5ecf5Vy6vLPu_qKP726IaLzs",authDomain:"gymnastics-club-by-ibime.firebaseapp.com",databaseURL:"https://gymnastics-club-by-ibime-default-rtdb.firebaseio.com/",projectId:"gymnastics-club-by-ibime",appId:"1:849277925066:web:6ef91b240277fe24846633"};
 const URL_GAS="https://script.google.com/macros/s/AKfycbwZg7nmuTA27A3rT6Pn6uDyfB4eyzbrFP5js09VNC1L-iMqG__DIvlFS59oH90HHu1Q/exec";
 const PALABRAS_MEMBRESIA=["MENSUALIDAD","CLASE","INSCRIPCION","PLAN","MEMBRESIA","RENOVACION"];
 const MEMBRESIA_DIAS=30;
 const $=id=>document.getElementById(id);
 
-firebase.initializeApp(FIREBASE_CONFIG);
+// Firebase inicializado por assets/js/firebase-init.js
 const db=firebase.firestore(),rtdb=firebase.database();
 
 let alumnosCached=[],alumnoActualID=null,alumnoExistente=null;
@@ -860,10 +861,14 @@ db.collection('pagos').where('fechaString','==',hoyStr).onSnapshot(snap=>{
 
 db.collection('reservas').where('estado','==','pre-reserva').onSnapshot(snap=>{
     $('listaPreRes').innerHTML=snap.empty?'<p style="grid-column:1/-1;text-align:center;font-size:.72rem;color:#94a3b8;font-weight:600;padding:1.5rem">Sin pre-reservas</p>':
-    snap.docs.map(d=>{const r=d.data();return`<div style="padding:.8rem;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px">
+    snap.docs.map(d=>{const r=d.data();
+        const horarioInfo=(r.dia&&r.hora)?`<p style="font-size:.6rem;color:#64748b;font-weight:600;margin-top:1px">📅 ${r.dia} ${r.hora}${r.horaFin?' – '+r.horaFin:''}</p>`:'';
+        const pasesInfo=(typeof r.pasesTotal==='number')?`<p style="font-size:.6rem;color:#64748b;font-weight:600">🎫 ${r.pasesTotal} pase(s)</p>`:'';
+        return`<div style="padding:.8rem;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px">
         <p style="font-size:.58rem;font-weight:800;color:#d97706;text-transform:uppercase;margin-bottom:.2rem">⏳ Pre-reserva</p>
         <p style="font-weight:900;font-size:.75rem;text-transform:uppercase">${r.alumnoNombre||r.alumnoId}</p>
         <p style="font-size:.65rem;color:var(--azul);font-weight:700;margin-top:1px">${r.claseNombre}</p>
+        ${horarioInfo}${pasesInfo}
         <button onclick="showView('caja');$('cajaBusca').value='${r.alumnoId}';buscarAlumnoCaja('${r.alumnoId}')" class="btn btn-azul" style="width:100%;justify-content:center;font-size:.6rem;padding:.4rem;margin-top:.5rem"><i class="fa-solid fa-cash-register"></i>Cobrar</button>
     </div>`;}
     ).join('');
