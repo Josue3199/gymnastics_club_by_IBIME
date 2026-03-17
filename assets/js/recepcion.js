@@ -281,8 +281,10 @@ async function registrarCobro(){
         if (typeof rtdb !== 'undefined') {
           try { const safeId = alumnoEnCaja.id.replace(/[.#$/[\]]/g,'_'); rtdb.ref('notificaciones/' + safeId).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) { console.warn('RTDB notification failed:', e); }
         }
-        const resSnap=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
-        await Promise.all(resSnap.docs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
+        const snap1=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
+        const snap2=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pendiente_pago').get();
+        const todosLosDocs=[...snap1.docs,...snap2.docs];
+        await Promise.all(todosLosDocs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
         // Si hay clases desde el carrito de recepción, crear reservas confirmadas directamente
         if (window._cajaPendingClases && window._cajaPendingClases.length) {
           const batch2 = db.batch();
@@ -311,7 +313,7 @@ async function registrarCobro(){
         fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'REGISTRAR_PAGO',id:alumnoEnCaja.id,nombre:alumnoEnCaja.nombre,idCarrito:folio,carrito:detalle,monto,metodo,fecha:new Date().toLocaleString('es-MX')})}).catch(()=>{});
         await rtdb.ref('estatus_acceso/'+alumnoEnCaja.id).remove();
         let msg=esMemb?'✅ MEMBRESÍA RENOVADA':'✅ PAGO REGISTRADO';
-        if(resSnap.size>0)msg+=` · ${resSnap.size} clase(s) confirmada(s)`;
+        if(todosLosDocs.length>0)msg+=` · ${todosLosDocs.length} clase(s) confirmada(s)`;
         toast(msg,5000);resetCaja();
     }catch(e){toast('❌ '+e.message);}
     finally{btn.textContent='Confirmar Pago';btn.disabled=false;}
