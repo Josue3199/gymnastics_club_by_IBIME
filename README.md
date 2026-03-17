@@ -271,6 +271,8 @@ service cloud.firestore {
    - Marca presente/ausente/tarde/justificado y guarda
    - Se descuenta 1 pase por alumno marcado y se registra en `asistencias`
 
+> **Nota de seguridad:** La contraseña por defecto del portal de profesores (`gymnastics2026`) es compartida y debe cambiarse por una más segura en producción. Para hacerlo, actualiza el campo `password` en la colección `profesores` y ajusta la validación en el portal.
+
 ## Despliegue en GitHub Pages
 
 No se requiere build ni Node.js. Solo sube los archivos y activa GitHub Pages desde la rama `main` (o el branch que uses):

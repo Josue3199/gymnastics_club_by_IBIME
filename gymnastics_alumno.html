@@ -1115,7 +1115,8 @@ function abrirModalHorarios(){
             if(cl.horarios&&cl.horarios.length){
                 cl.horarios.forEach(h=>allHorarios.push({...h,_claseId:cl.id}));
             } else if(cl.dia&&cl.inicio){
-                const cupoActual=(cl.cupo||0)-(cl.cupoDisponible??cl.cupo??0);
+                const cupoDisp=(cl.cupoDisponible!=null?cl.cupoDisponible:cl.cupo)||0;
+                const cupoActual=(cl.cupo||0)-cupoDisp;
                 allHorarios.push({
                     id:cl.id,
                     dia:cl.dia,
@@ -1466,12 +1467,12 @@ function checkClaseActual(){
         if(r.horaFin){const[fh,fm]=r.horaFin.split(':').map(Number);finMin=fh*60+fm;}
         const diffInicio=inicioMin-ahoraMin;
         const nombre=r.claseNombre||r.disciplina||'clase';
-        const key30=r.rid+'_30';
+        const keyProxima=r.rid+'_proxima';
         const keyNow=r.rid+'_now';
         const keyEnd=r.rid+'_end';
-        if(diffInicio>=25&&diffInicio<=35&&!_notifCache[key30]){
-            _notifCache[key30]=true;
-            toast('🔔 Tu clase de '+nombre+' inicia en ~'+diffInicio+' min',5000);
+        if(diffInicio>=25&&diffInicio<=30&&!_notifCache[keyProxima]){
+            _notifCache[keyProxima]=true;
+            toast('🔔 Tu clase de '+nombre+' inicia en ~30 min',5000);
         }
         if(diffInicio<=0&&ahoraMin<finMin&&!_notifCache[keyNow]){
             _notifCache[keyNow]=true;

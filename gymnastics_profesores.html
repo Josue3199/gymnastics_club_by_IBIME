@@ -947,12 +947,13 @@ async function saveAttendance() {
       });
       // Descontar 1 pase de la reserva (política estricta: se descuenta siempre,
       // asistió o no asistió). Actualizar también el flag de asistencia/falta.
+      // asistencia=true si presente o tarde; falta=true si ausente o justificado.
       const reservaRef = db.collection('reservas').doc(a.id);
       const asistioFlag = tipo === 'presente' || tipo === 'tarde';
       batch.update(reservaRef, {
         pasesRestantes: firebase.firestore.FieldValue.increment(-1),
-        asistencia: asistioFlag ? true : firebase.firestore.FieldValue.delete(),
-        falta: !asistioFlag ? true : firebase.firestore.FieldValue.delete()
+        asistencia: asistioFlag,
+        falta: !asistioFlag
       });
       saved++;
     });
