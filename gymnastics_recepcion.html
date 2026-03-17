@@ -202,37 +202,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 <!-- ════ DASHBOARD ════════════════════════════════════════════ -->
 <div id="view-dashboard" class="view on">
   <h1 class="page-title">Control <span>Realtime</span></h1>
-  <div class="grid-5-col">
+  <div class="grid-4-col">
     <div class="stat-card"><div class="accent" style="background:#3b82f6"></div><p class="stat-lbl">Total Alumnos</p><p id="dTotal" class="stat-val">0</p></div>
     <div class="stat-card"><div class="accent" style="background:#10b981"></div><p class="stat-lbl">Activos</p><p id="dActivos" class="stat-val" style="color:#059669">0</p></div>
     <div class="stat-card"><div class="accent" style="background:#ef4444"></div><p class="stat-lbl">Vencidos</p><p id="dVencidos" class="stat-val" style="color:#dc2626">0</p></div>
     <div class="stat-card"><div class="accent" style="background:#f59e0b"></div><p class="stat-lbl">Órdenes hoy</p><p id="dOrdenes" class="stat-val" style="color:#d97706">0</p></div>
-    <div class="stat-card" onclick="abrirIngresos()" style="cursor:pointer;opacity:0.7;filter:grayscale(0.5)" title="Ver detalle (requiere contraseña)"><div class="accent" style="background:var(--azul)"></div><p class="stat-lbl">💰 Ingreso hoy <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.5rem;opacity:.5"></i></p><p id="dIngreso" class="stat-val" style="color:var(--azul)">$0</p><p id="dIngresoSub" style="font-size:.58rem;color:var(--txt2);font-weight:600;margin-top:.2rem"></p></div>
-  </div>
-  <!-- Panel ingreso del día con desglose -->
-  <div class="card" style="padding:1.2rem;margin-bottom:1rem;border-left:4px solid #10b981">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
-      <p class="section-lbl" style="margin-bottom:0">💰 Cobros de hoy</p>
-      <button onclick="abrirIngresos()" class="btn btn-ghost" style="font-size:.6rem;padding:.3rem .7rem"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver historial</button>
-    </div>
-    <div class="grid-3-col">
-      <div style="background:#f0fdf4;border-radius:10px;padding:.7rem;text-align:center">
-        <p style="font-size:.55rem;font-weight:800;text-transform:uppercase;color:#166534;letter-spacing:.06em">Total hoy</p>
-        <p id="dIngresoTotalHoy" style="font-size:1.3rem;font-weight:900;color:#059669">$0</p>
-      </div>
-      <div style="background:#eff6ff;border-radius:10px;padding:.7rem;text-align:center">
-        <p style="font-size:.55rem;font-weight:800;text-transform:uppercase;color:#1e40af;letter-spacing:.06em">💵 Efectivo</p>
-        <p id="dIngresoEfectivo" style="font-size:1.3rem;font-weight:900;color:#1d4ed8">$0</p>
-      </div>
-      <div style="background:#faf5ff;border-radius:10px;padding:.7rem;text-align:center">
-        <p style="font-size:.55rem;font-weight:800;text-transform:uppercase;color:#6b21a8;letter-spacing:.06em">🏦 Transf.</p>
-        <p id="dIngresoTransf" style="font-size:1.3rem;font-weight:900;color:#7c3aed">$0</p>
-      </div>
-    </div>
-    <!-- Lista de cobros del día en tiempo real -->
-    <div id="listaCobrosHoy" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:.35rem">
-      <p style="text-align:center;font-size:.72rem;color:var(--txt2);font-weight:600;padding:.5rem">Sin cobros registrados hoy</p>
-    </div>
   </div>
   <div class="grid-2-col-sm">
     <div class="card" style="padding:1.1rem">
@@ -414,6 +388,38 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
             <p style="font-size:.65rem;color:var(--txt2);text-align:center;padding:.5rem">Cargando...</p>
           </div>
         </div>
+        <!-- Carrito por ID -->
+        <div id="cajaCarrito" style="margin-top:.75rem;display:none">
+          <p class="section-lbl" style="margin-bottom:.5rem">🛒 Armar Carrito</p>
+          <!-- Inscripción automática si no está pagada -->
+          <div id="cajaInscRow" style="display:none;padding:.6rem .8rem;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:.5rem;cursor:pointer" onclick="toggleCarritoInsc()">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:.5rem">
+                <span id="cajaInscCheck" style="width:20px;height:20px;border-radius:50%;border:2px solid #d97706;display:flex;align-items:center;justify-content:center;font-size:.55rem;color:#d97706"></span>
+                <div>
+                  <p style="font-size:.72rem;font-weight:800">⭐ Inscripción IBIME</p>
+                  <p style="font-size:.6rem;color:#92400e;font-weight:600">Cuota única — $800</p>
+                </div>
+              </div>
+              <p id="cajaInscPrecio" style="font-weight:900;font-size:.85rem;color:#d97706">$800</p>
+            </div>
+          </div>
+          <!-- Filtros área -->
+          <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
+            <button onclick="filtrarCartArea('todo')" id="cfa-todo" class="btn btn-azul" style="font-size:.6rem;padding:.3rem .6rem">Todas</button>
+            <button onclick="filtrarCartArea('fitness')" id="cfa-fitness" class="btn btn-ghost" style="font-size:.6rem;padding:.3rem .6rem;color:var(--rojo)">🏃 Fitness</button>
+            <button onclick="filtrarCartArea('gimnasia')" id="cfa-gimnasia" class="btn btn-ghost" style="font-size:.6rem;padding:.3rem .6rem;color:var(--azul)">🤸 Gimnasia</button>
+          </div>
+          <!-- Grid de clases -->
+          <div id="cajaCatalogo" style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow-y:auto;margin-bottom:.5rem"></div>
+          <!-- Total carrito -->
+          <div id="cajaCarritoTotal" style="display:none;padding:.5rem .75rem;background:#f0f4ff;border:1.5px solid #c7d2fe;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+            <p style="font-size:.72rem;font-weight:800;color:var(--azul)">Total carrito:</p>
+            <p id="cajaCartTotalVal" style="font-weight:900;font-size:1rem;color:var(--azul)">$0</p>
+          </div>
+          <button onclick="aplicarCarritoACaja()" class="btn btn-azul" style="width:100%;justify-content:center;font-size:.7rem"><i class="fa-solid fa-cart-shopping"></i> Aplicar al cobro</button>
+        </div>
+        <button onclick="toggleCarritoPanel()" id="btnToggleCarrito" style="display:none;width:100%;margin-top:.5rem;padding:.5rem;background:#f8fafc;border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;font-size:.7rem;font-weight:700;color:var(--txt2)"><i class="fa-solid fa-cart-shopping"></i> Armar carrito de clases</button>
       </div>
     </div>
     <div class="card" style="padding:1.5rem">
@@ -588,7 +594,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 
         <!-- Sub-panel: Alumnos inscritos -->
         <div id="spanel-inscritos" class="card" style="padding:1.2rem">
-          <p class="section-lbl" style="margin-bottom:.75rem">Alumnos inscritos en esta clase</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <p class="section-lbl" style="margin-bottom:0">Alumnos inscritos <span id="pInscritosCount" style="font-size:.65rem;color:var(--txt2);font-weight:700"></span></p>
+            <span style="font-size:.6rem;font-weight:700;color:#10b981;display:flex;align-items:center;gap:.3rem"><span style="width:6px;height:6px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite"></span>Tiempo real</span>
+          </div>
+          <!-- Filtro por horario cuando hay múltiples horarios de la misma disciplina -->
+          <div id="filtroHorarioInsc" style="display:none;margin-bottom:.5rem"></div>
           <div id="listaInscritosDiscip" style="display:flex;flex-direction:column;gap:.4rem;max-height:360px;overflow-y:auto"></div>
         </div>
 
@@ -751,7 +762,7 @@ const db=firebase.firestore(),rtdb=firebase.database();
 
 let alumnosCached=[],alumnoActualID=null,alumnoExistente=null;
 let scannerCaja=null,scannerActivo=false;
-let clasesCached=[],claseActualID=null,claseViendoID=null;
+let clasesCached=[],claseActualID=null,claseViendoID=null,_unsubInscritosPanel=null;
 let alumnoMoverID=null,alumnoMoverReservaID=null;
 let areaFiltro='todo';
 
@@ -899,7 +910,7 @@ async function registrarAlumno(){
         const hoy=new Date();const venc=new Date(hoy);venc.setDate(venc.getDate()+MEMBRESIA_DIAS);
         const vencStr=venc.toISOString().split('T')[0];
         const montoInscripcion = cuponAplicado ? '0' : '800';
-        await db.collection('alumnos').doc(nuevoID).set({nombre,curp,nivel,pago:montoInscripcion,pin,condicion:cond,matricula:mat,correo,celular,fechaRegistro:hoy.toLocaleDateString('es-MX'),vencimiento:vencStr,estatus:'INACTIVO',inscripcionPagada:false,primerAcceso:true,password:pin});
+        await db.collection('alumnos').doc(nuevoID).set({nombre,curp,nivel,pago:montoInscripcion,pin,condicion:cond,matricula:mat,correo,celular,fechaRegistro:hoy.toLocaleDateString('es-MX'),vencimiento:vencStr,estatus:'INACTIVO',inscripcionPagada:cuponAplicado,inscripcionExenta:cuponAplicado,cuponUsado:cuponAplicado?'APERTURA2026':null,primerAcceso:true,password:pin});
         fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'NUEVO_USUARIO',id:nuevoID,nombre,curp,pin,nivel,monto:montoInscripcion,fecha:hoy.toLocaleDateString('es-MX'),condicion:cond,matricula:mat,vencimiento:vencStr})}).catch(()=>{});
         mostrarCredencialReg(nuevoID,nombre,nivel,pin,vencStr);
         cuponAplicado = false;
@@ -943,12 +954,14 @@ function enviarWhatsApp(){const c=window._credActual||{};const m=`*IBIME GYMNAST
 // ── CAJA ─────────────────────────────────────────────────────────
 let alumnoEnCaja=null;
 async function buscarAlumnoCaja(id){
+    _cajaCartItems={};_cajaInscCheck=false;
     const idU=String(id||'').trim().toUpperCase();if(!idU)return;
     try{
         const snap=await db.collection('alumnos').doc(idU).get();
         if(!snap.exists){toast('❌ Alumno no encontrado');return;}
         alumnoEnCaja={id:idU,...snap.data()};
         $('cajaSinAlumno').style.display='none';$('cajaConAlumno').style.display='block';
+        $('btnToggleCarrito').style.display='block';
         $('cajaNombreLetra').textContent=alumnoEnCaja.nombre?.charAt(0)||'?';
         $('cajaNombre').textContent=alumnoEnCaja.nombre||'';$('cajaIDAlumno').textContent=idU;
         const vf=alumnoEnCaja.vencimiento?new Date(alumnoEnCaja.vencimiento):new Date(0);
@@ -965,7 +978,14 @@ async function buscarAlumnoCaja(id){
         cargarPagosRecientes(idU);
     }catch(e){toast('❌ '+e.message);}
 }
-function resetCaja(){alumnoEnCaja=null;$('cajaSinAlumno').style.display='block';$('cajaConAlumno').style.display='none';$('cajaMonto').value='';$('cajaDetalle').value='';$('cajaRefTransf').value='';$('campoRefTransf').style.display='none';$('cajaMetodo').value='EFECTIVO';}
+function resetCaja(){alumnoEnCaja=null;$('cajaSinAlumno').style.display='block';$('cajaConAlumno').style.display='none';$('cajaMonto').value='';$('cajaDetalle').value='';$('cajaRefTransf').value='';$('campoRefTransf').style.display='none';$('cajaMetodo').value='EFECTIVO';
+  // Reset carrito
+  _cajaCartItems={};_cajaInscCheck=false;
+  $('cajaCarrito').style.display='none';
+  $('btnToggleCarrito').style.display='none';
+  window._cajaPendingClases=null;window._cajaPendingInsc=false;
+  if(_unsubCajaCatalogo){_unsubCajaCatalogo();_unsubCajaCatalogo=null;}
+}
 async function registrarCobro(){
     if(!alumnoEnCaja)return;
     const btn=$('btnCobrar');const folio=$('cajaFolio').textContent;
@@ -995,6 +1015,31 @@ async function registrarCobro(){
         }
         const resSnap=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
         await Promise.all(resSnap.docs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
+        // Si hay clases desde el carrito de recepción, crear reservas confirmadas directamente
+        if (window._cajaPendingClases && window._cajaPendingClases.length) {
+          const batch2 = db.batch();
+          for (const cl of window._cajaPendingClases) {
+            const resRef = db.collection('reservas').doc();
+            batch2.set(resRef, {
+              alumnoId: alumnoEnCaja.id, alumnoNombre: alumnoEnCaja.nombre,
+              claseId: cl.claseId, claseNombre: cl.claseNombre, area: cl.area||'',
+              folio, estado: 'confirmada', alertaMostrada: false,
+              fechaConfirmacion: new Date().toLocaleDateString('es-MX'),
+              timestamp: Date.now(),
+              dia: cl.dia||'', hora: cl.hora||'', horaFin: cl.horaFin||'', profesor: cl.profesor||'',
+              pasesTotal: 1, pasesRestantes: 1
+            });
+            batch2.update(db.collection('catalogo').doc(cl.claseId), {
+              cupoDisponible: firebase.firestore.FieldValue.increment(-1)
+            });
+          }
+          await batch2.commit();
+          if (window._cajaPendingInsc) {
+            await db.collection('alumnos').doc(alumnoEnCaja.id).update({ inscripcionPagada: true, estatus: 'ACTIVO' });
+          }
+          window._cajaPendingClases = null;
+          window._cajaPendingInsc = false;
+        }
         fetch(URL_GAS,{method:'POST',mode:'no-cors',body:JSON.stringify({accion:'REGISTRAR_PAGO',id:alumnoEnCaja.id,nombre:alumnoEnCaja.nombre,idCarrito:folio,carrito:detalle,monto,metodo,fecha:new Date().toLocaleString('es-MX')})}).catch(()=>{});
         await rtdb.ref('estatus_acceso/'+alumnoEnCaja.id).remove();
         let msg=esMemb?'✅ MEMBRESÍA RENOVADA':'✅ PAGO REGISTRADO';
@@ -1007,6 +1052,109 @@ function toggleRefTransf(){
     const m=$('cajaMetodo').value;
     $('campoRefTransf').style.display=m==='TRANSFERENCIA'?'block':'none';
     if(m!=='TRANSFERENCIA')$('cajaRefTransf').value='';
+}
+
+// ── CARRITO POR ID ────────────────────────────────────────────
+let _cajaCartArea = 'todo', _cajaCartItems = {}, _cajaInscCheck = false;
+let _unsubCajaCatalogo = null;
+
+function toggleCarritoPanel() {
+  const p = $('cajaCarrito');
+  const btn = $('btnToggleCarrito');
+  const visible = p.style.display !== 'none';
+  p.style.display = visible ? 'none' : 'block';
+  btn.innerHTML = visible ? '<i class="fa-solid fa-cart-shopping"></i> Armar carrito de clases' : '<i class="fa-solid fa-xmark"></i> Cerrar carrito';
+  if (!visible) cargarCajaCatalogo();
+}
+
+function cargarCajaCatalogo() {
+  if (_unsubCajaCatalogo) { _unsubCajaCatalogo(); _unsubCajaCatalogo = null; }
+  _unsubCajaCatalogo = db.collection('catalogo').where('tipo','==','clase').onSnapshot(snap => {
+    _cajaCatalogoCached = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCajaCatalogo();
+  });
+  if (alumnoEnCaja && !alumnoEnCaja.inscripcionPagada) {
+    $('cajaInscRow').style.display = 'block';
+  }
+}
+
+let _cajaCatalogoCached = [];
+
+function filtrarCartArea(area) {
+  _cajaCartArea = area;
+  ['todo','fitness','gimnasia'].forEach(a => {
+    const btn = $('cfa-' + a);
+    if (btn) { btn.className = a === area ? 'btn btn-azul' : 'btn btn-ghost'; if (a==='fitness') btn.style.color=a===area?'':'var(--rojo)'; if(a==='gimnasia') btn.style.color=a===area?'':'var(--azul)'; }
+  });
+  renderCajaCatalogo();
+}
+
+function renderCajaCatalogo() {
+  const clases = _cajaCatalogoCached.filter(c => _cajaCartArea === 'todo' || c.area === _cajaCartArea);
+  const cont = $('cajaCatalogo');
+  if (!clases.length) { cont.innerHTML = '<p style="text-align:center;font-size:.7rem;color:#94a3b8;font-weight:600;padding:1rem">Sin clases disponibles</p>'; return; }
+  cont.innerHTML = clases.map(c => {
+    const sel = !!_cajaCartItems[c.id];
+    return `<div onclick="toggleCajaCartItem('${c.id}')" style="padding:.6rem .8rem;border:2px solid ${sel?'var(--azul)':'var(--border)'};border-radius:10px;cursor:pointer;background:${sel?'#eef3ff':'white'};display:flex;align-items:center;justify-content:space-between;transition:all .15s">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1.1rem">${c.icon||'📚'}</span>
+        <div>
+          <p style="font-size:.72rem;font-weight:800;text-transform:uppercase">${c.nombre}</p>
+          <p style="font-size:.6rem;color:var(--txt2);font-weight:600">${c.inicio||''}${c.fin?' – '+c.fin:''} · ${c.dia||''} · ${c.profesor||'Sin profesor'}</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <p style="font-weight:900;font-size:.8rem;color:var(--azul)">$${c.precio||0}</p>
+        <div style="width:20px;height:20px;border-radius:50%;border:2px solid ${sel?'var(--azul)':'#cbd5e1'};background:${sel?'var(--azul)':'transparent'};display:flex;align-items:center;justify-content:center;color:white;font-size:.55rem">${sel?'✓':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  actualizarCajaCarritoTotal();
+}
+
+function toggleCajaCartItem(id) {
+  if (_cajaCartItems[id]) { delete _cajaCartItems[id]; } else {
+    const c = _cajaCatalogoCached.find(x => x.id === id);
+    if (c) _cajaCartItems[id] = c;
+  }
+  renderCajaCatalogo();
+}
+
+function toggleCarritoInsc() {
+  _cajaInscCheck = !_cajaInscCheck;
+  const chk = $('cajaInscCheck');
+  if (chk) { chk.textContent = _cajaInscCheck ? '✓' : ''; chk.style.background = _cajaInscCheck ? '#d97706' : 'transparent'; }
+  actualizarCajaCarritoTotal();
+}
+
+function actualizarCajaCarritoTotal() {
+  let total = 0;
+  if (_cajaInscCheck) total += 800;
+  Object.values(_cajaCartItems).forEach(c => total += (c.precio || 0));
+  const totalEl = $('cajaCartTotalVal');
+  if (totalEl) totalEl.textContent = '$' + total.toLocaleString('es-MX', {minimumFractionDigits:2,maximumFractionDigits:2});
+  const totalRow = $('cajaCarritoTotal');
+  if (totalRow) totalRow.style.display = total > 0 ? 'flex' : 'none';
+}
+
+function aplicarCarritoACaja() {
+  const clases = Object.values(_cajaCartItems);
+  const items = [];
+  if (_cajaInscCheck) items.push('INSCRIPCION');
+  clases.forEach(c => items.push(c.nombre));
+  if (!items.length) { toast('⚠️ Selecciona al menos un item'); return; }
+  let total = _cajaInscCheck ? 800 : 0;
+  clases.forEach(c => total += (c.precio || 0));
+  $('cajaMonto').value = total;
+  $('cajaDetalle').value = items.join(', ');
+  window._cajaPendingClases = clases.map(c => ({
+    claseId: c.id, claseNombre: c.nombre, area: c.area, dia: c.dia||'', hora: c.inicio||'', horaFin: c.fin||'', profesor: c.profesor||'',
+    precio: c.precio||0, icon: c.icon||'📚'
+  }));
+  window._cajaPendingInsc = _cajaInscCheck;
+  toast('✅ Carrito aplicado al cobro');
+  $('cajaCarrito').style.display = 'none';
+  $('btnToggleCarrito').innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Armar carrito de clases';
 }
 
 function toggleScannerCaja(){
@@ -1182,6 +1330,7 @@ function cerrarPanel(){
     $('panelVacio').style.display='block';
     $('panelContenido').style.display='none';
     claseViendoID=null;
+    if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
     renderGridDiscip();
 }
 function filtrarClaseInput(){
@@ -1214,6 +1363,7 @@ function renderGridDiscip(){
           <span class="dc-icon">${gr.icon}</span>
           <p class="dc-name">${gr.nombre}</p>
           <p class="dc-sub">${gr.horarios.length} horario${gr.horarios.length>1?'s':''} · ${disp} lugares libres</p>
+          ${gr.horarios.slice(0,2).map(h=>`<p style="font-size:.55rem;font-weight:700;color:${col};opacity:.8;line-height:1.4">${h.diasSemana&&h.diasSemana.length?h.diasSemana.join(', '):(h.dia||'')} ${h.inicio?'⏰'+h.inicio+(h.fin?'–'+h.fin:''):''}</p>`).join('')}
           <div class="dc-ocupacion"><div class="dc-ocupacion-fill" style="width:${pct}%;background:${pct>80?'#ef4444':pct>50?'#f59e0b':col}"></div></div>
           <p style="font-size:.58rem;font-weight:700;color:#94a3b8;margin-top:.3rem">${ocupados}/${total} lugares usados</p>
         </div>`;
@@ -1241,12 +1391,12 @@ async function verDiscip(claseId,nombre){
     const barColor=pctC>80?'#ef4444':pctC>50?'#f59e0b':(esFit?'var(--rojo)':'var(--azul)');
     $('pOcupBar').style.width=pctC+'%';$('pOcupBar').style.background=barColor;
     $('pOcupTxt').textContent=ocupC+'/'+totalC+' lugares usados';
-    await cargarInscritosDiscip(claseId);
+    cargarInscritosDiscip(claseId);
     // Scroll to panel
     $('panelDetalle').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function cerrarPanelDiscip(){$('panelContenido').style.display='none';claseViendoID=null;renderGridDiscip();}
+function cerrarPanelDiscip(){$('panelContenido').style.display='none';claseViendoID=null;if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}renderGridDiscip();}
 
 function abrirEditar(id){
     switchVistaClases('editar');
@@ -1261,23 +1411,73 @@ function switchSubTab(tab){switchPanel(tab);} function _legacySwitchSubTab_unuse
     if(tab==='mover')renderListaMoverDiscip();
 }
 
-async function cargarInscritosDiscip(claseId){
-    const snap=await db.collection('reservas').where('claseId','==',claseId).where('estado','==','confirmada').get();
-    const inscritos=snap.docs.map(d=>{return{rid:d.id,...d.data()}});
+function cargarInscritosDiscip(claseId){
+    // Cancelar listener anterior si existe
+    if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
+    $('listaInscritosDiscip').innerHTML='<p style="text-align:center;font-size:.72rem;color:#94a3b8;font-weight:600;padding:1rem"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando...</p>';
+
+    // Mostrar filtros de horario si la disciplina tiene múltiples schedules
+    const claseActual=clasesCached.find(c=>c.id===claseId);
+    const nombre=claseActual?.nombre;
+    const horariosClase=nombre?clasesCached.filter(c=>c.nombre===nombre):[];
+    const horarioFiltEl=$('filtroHorarioInsc');
+    if(horariosClase.length>1){
+        horarioFiltEl.style.display='block';
+        horarioFiltEl.innerHTML='<p style="font-size:.6rem;font-weight:800;color:var(--txt2);text-transform:uppercase;margin-bottom:.3rem">Filtrar por horario:</p>'
+            +'<div style="display:flex;flex-wrap:wrap;gap:.3rem">'
+            +'<button onclick="filtrarInscHorario(null,\''+claseId+'\')" id="hor-filt-all" class="btn btn-azul" style="font-size:.6rem;padding:.25rem .55rem">Todos</button>'
+            +horariosClase.map(h=>`<button onclick="filtrarInscHorario('${h.id}','${claseId}')" id="hor-filt-${h.id}" class="btn btn-ghost" style="font-size:.6rem;padding:.25rem .55rem">${h.dia||'?'} ${h.inicio||'?'}</button>`).join('')
+            +'</div>';
+    } else {
+        horarioFiltEl.style.display='none';
+    }
+    window._inscritosHorFiltro=null;
+
+    _unsubInscritosPanel=db.collection('reservas').where('claseId','==',claseId).where('estado','==','confirmada').onSnapshot(snap=>{
+        const inscritos=snap.docs.map(d=>({rid:d.id,...d.data()}));
+        window._inscritosActuales=inscritos;
+        renderListaInscritosDiscip(inscritos,claseId);
+    },err=>{
+        $('listaInscritosDiscip').innerHTML='<p style="text-align:center;font-size:.72rem;color:#ef4444;font-weight:600;padding:1rem">Error al cargar</p>';
+        console.error(err);
+    });
+}
+
+function filtrarInscHorario(horarioId,claseId){
+    window._inscritosHorFiltro=horarioId;
+    // Update button styles
+    document.querySelectorAll('[id^="hor-filt-"]').forEach(b=>{b.className='btn btn-ghost';b.style.color='';});
+    const activeBtn=horarioId?$('hor-filt-'+horarioId):$('hor-filt-all');
+    if(activeBtn){activeBtn.className='btn btn-azul';}
+    if(horarioId){
+        // Load students for this specific schedule
+        if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
+        _unsubInscritosPanel=db.collection('reservas').where('claseId','==',horarioId).where('estado','==','confirmada').onSnapshot(snap=>{
+            const inscritos=snap.docs.map(d=>({rid:d.id,...d.data()}));
+            window._inscritosActuales=inscritos;
+            renderListaInscritosDiscip(inscritos,horarioId);
+        });
+    } else {
+        cargarInscritosDiscip(claseId);
+    }
+}
+
+function renderListaInscritosDiscip(inscritos,claseId){
+    const countEl=$('pInscritosCount');
+    if(countEl)countEl.textContent='('+inscritos.length+')';
     $('listaInscritosDiscip').innerHTML=inscritos.length===0?'<p style="text-align:center;font-size:.72rem;color:#94a3b8;font-weight:600;padding:1.5rem">Sin alumnos confirmados</p>':
     inscritos.map(r=>`<div class="alumno-en-clase">
         <div style="display:flex;align-items:center;gap:.7rem">
           <div class="ac-avatar">${r.alumnoNombre?.charAt(0)||'?'}</div>
-          <div class="ac-info"><p>${r.alumnoNombre||r.alumnoId}</p><span>${r.alumnoId}</span></div>
+          <div class="ac-info"><p>${r.alumnoNombre||r.alumnoId}</p><span>${r.alumnoId}</span>${r.dia||r.hora?`<span style="font-size:.58rem;color:var(--azul);font-weight:700">${r.dia||''} ${r.hora||''}${r.horaFin?' – '+r.horaFin:''}</span>`:''}
+          </div>
         </div>
         <div style="display:flex;gap:.4rem">
           <button onclick="iniciarMover('${r.alumnoId}','${r.alumnoNombre||r.alumnoId}','${r.rid}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#7c3aed"><i class="fa-solid fa-right-left"></i></button>
-          <button onclick="quitarDeClase('${r.rid}','${claseViendoID}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#ef4444"><i class="fa-solid fa-user-minus"></i></button>
+          <button onclick="quitarDeClase('${r.rid}','${claseId||claseViendoID}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#ef4444"><i class="fa-solid fa-user-minus"></i></button>
           <button onclick="showView('alumnos');seleccionarAlumno('${r.alumnoId}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem"><i class="fa-solid fa-user"></i></button>
         </div>
     </div>`).join('');
-    // También guardar para mover
-    window._inscritosActuales=inscritos;
 }
 
 function renderListaMoverDiscip(){
@@ -1319,7 +1519,7 @@ async function ejecutarMover(){
         batch.update(db.collection('catalogo').doc(destId),{cupoDisponible:firebase.firestore.FieldValue.increment(-1)});
         await batch.commit();
         toast('🔄 Movido a '+dest.nombre,4000);cancelarMover();
-        await cargarInscritosDiscip(claseViendoID);
+        cargarInscritosDiscip(claseViendoID);
     }catch(e){toast('❌ '+e.message);}
 }
 
@@ -1328,7 +1528,7 @@ async function quitarDeClase(reservaId,claseId){
     try{
         await db.collection('catalogo').doc(claseId).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
         await db.collection('reservas').doc(reservaId).delete();
-        toast('🗑️ Alumno removido');await cargarInscritosDiscip(claseId);
+        toast('🗑️ Alumno removido');cargarInscritosDiscip(claseId);
     }catch(e){toast('❌ '+e.message);}
 }
 
