@@ -594,7 +594,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);margi
 
         <!-- Sub-panel: Alumnos inscritos -->
         <div id="spanel-inscritos" class="card" style="padding:1.2rem">
-          <p class="section-lbl" style="margin-bottom:.75rem">Alumnos inscritos en esta clase</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <p class="section-lbl" style="margin-bottom:0">Alumnos inscritos <span id="pInscritosCount" style="font-size:.65rem;color:var(--txt2);font-weight:700"></span></p>
+            <span style="font-size:.6rem;font-weight:700;color:#10b981;display:flex;align-items:center;gap:.3rem"><span style="width:6px;height:6px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite"></span>Tiempo real</span>
+          </div>
+          <!-- Filtro por horario cuando hay múltiples horarios de la misma disciplina -->
+          <div id="filtroHorarioInsc" style="display:none;margin-bottom:.5rem"></div>
           <div id="listaInscritosDiscip" style="display:flex;flex-direction:column;gap:.4rem;max-height:360px;overflow-y:auto"></div>
         </div>
 
@@ -757,7 +762,7 @@ const db=firebase.firestore(),rtdb=firebase.database();
 
 let alumnosCached=[],alumnoActualID=null,alumnoExistente=null;
 let scannerCaja=null,scannerActivo=false;
-let clasesCached=[],claseActualID=null,claseViendoID=null;
+let clasesCached=[],claseActualID=null,claseViendoID=null,_unsubInscritosPanel=null;
 let alumnoMoverID=null,alumnoMoverReservaID=null;
 let areaFiltro='todo';
 
@@ -1325,6 +1330,7 @@ function cerrarPanel(){
     $('panelVacio').style.display='block';
     $('panelContenido').style.display='none';
     claseViendoID=null;
+    if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
     renderGridDiscip();
 }
 function filtrarClaseInput(){
@@ -1385,12 +1391,12 @@ async function verDiscip(claseId,nombre){
     const barColor=pctC>80?'#ef4444':pctC>50?'#f59e0b':(esFit?'var(--rojo)':'var(--azul)');
     $('pOcupBar').style.width=pctC+'%';$('pOcupBar').style.background=barColor;
     $('pOcupTxt').textContent=ocupC+'/'+totalC+' lugares usados';
-    await cargarInscritosDiscip(claseId);
+    cargarInscritosDiscip(claseId);
     // Scroll to panel
     $('panelDetalle').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function cerrarPanelDiscip(){$('panelContenido').style.display='none';claseViendoID=null;renderGridDiscip();}
+function cerrarPanelDiscip(){$('panelContenido').style.display='none';claseViendoID=null;if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}renderGridDiscip();}
 
 function abrirEditar(id){
     switchVistaClases('editar');
@@ -1405,9 +1411,60 @@ function switchSubTab(tab){switchPanel(tab);} function _legacySwitchSubTab_unuse
     if(tab==='mover')renderListaMoverDiscip();
 }
 
-async function cargarInscritosDiscip(claseId){
-    const snap=await db.collection('reservas').where('claseId','==',claseId).where('estado','==','confirmada').get();
-    const inscritos=snap.docs.map(d=>{return{rid:d.id,...d.data()}});
+function cargarInscritosDiscip(claseId){
+    // Cancelar listener anterior si existe
+    if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
+    $('listaInscritosDiscip').innerHTML='<p style="text-align:center;font-size:.72rem;color:#94a3b8;font-weight:600;padding:1rem"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando...</p>';
+
+    // Mostrar filtros de horario si la disciplina tiene múltiples schedules
+    const claseActual=clasesCached.find(c=>c.id===claseId);
+    const nombre=claseActual?.nombre;
+    const horariosClase=nombre?clasesCached.filter(c=>c.nombre===nombre):[];
+    const horarioFiltEl=$('filtroHorarioInsc');
+    if(horariosClase.length>1){
+        horarioFiltEl.style.display='block';
+        horarioFiltEl.innerHTML='<p style="font-size:.6rem;font-weight:800;color:var(--txt2);text-transform:uppercase;margin-bottom:.3rem">Filtrar por horario:</p>'
+            +'<div style="display:flex;flex-wrap:wrap;gap:.3rem">'
+            +'<button onclick="filtrarInscHorario(null,\''+claseId+'\')" id="hor-filt-all" class="btn btn-azul" style="font-size:.6rem;padding:.25rem .55rem">Todos</button>'
+            +horariosClase.map(h=>`<button onclick="filtrarInscHorario('${h.id}','${claseId}')" id="hor-filt-${h.id}" class="btn btn-ghost" style="font-size:.6rem;padding:.25rem .55rem">${h.dia||'?'} ${h.inicio||'?'}</button>`).join('')
+            +'</div>';
+    } else {
+        horarioFiltEl.style.display='none';
+    }
+    window._inscritosHorFiltro=null;
+
+    _unsubInscritosPanel=db.collection('reservas').where('claseId','==',claseId).where('estado','==','confirmada').onSnapshot(snap=>{
+        const inscritos=snap.docs.map(d=>({rid:d.id,...d.data()}));
+        window._inscritosActuales=inscritos;
+        renderListaInscritosDiscip(inscritos,claseId);
+    },err=>{
+        $('listaInscritosDiscip').innerHTML='<p style="text-align:center;font-size:.72rem;color:#ef4444;font-weight:600;padding:1rem">Error al cargar</p>';
+        console.error(err);
+    });
+}
+
+function filtrarInscHorario(horarioId,claseId){
+    window._inscritosHorFiltro=horarioId;
+    // Update button styles
+    document.querySelectorAll('[id^="hor-filt-"]').forEach(b=>{b.className='btn btn-ghost';b.style.color='';});
+    const activeBtn=horarioId?$('hor-filt-'+horarioId):$('hor-filt-all');
+    if(activeBtn){activeBtn.className='btn btn-azul';}
+    if(horarioId){
+        // Load students for this specific schedule
+        if(_unsubInscritosPanel){_unsubInscritosPanel();_unsubInscritosPanel=null;}
+        _unsubInscritosPanel=db.collection('reservas').where('claseId','==',horarioId).where('estado','==','confirmada').onSnapshot(snap=>{
+            const inscritos=snap.docs.map(d=>({rid:d.id,...d.data()}));
+            window._inscritosActuales=inscritos;
+            renderListaInscritosDiscip(inscritos,horarioId);
+        });
+    } else {
+        cargarInscritosDiscip(claseId);
+    }
+}
+
+function renderListaInscritosDiscip(inscritos,claseId){
+    const countEl=$('pInscritosCount');
+    if(countEl)countEl.textContent='('+inscritos.length+')';
     $('listaInscritosDiscip').innerHTML=inscritos.length===0?'<p style="text-align:center;font-size:.72rem;color:#94a3b8;font-weight:600;padding:1.5rem">Sin alumnos confirmados</p>':
     inscritos.map(r=>`<div class="alumno-en-clase">
         <div style="display:flex;align-items:center;gap:.7rem">
@@ -1417,12 +1474,10 @@ async function cargarInscritosDiscip(claseId){
         </div>
         <div style="display:flex;gap:.4rem">
           <button onclick="iniciarMover('${r.alumnoId}','${r.alumnoNombre||r.alumnoId}','${r.rid}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#7c3aed"><i class="fa-solid fa-right-left"></i></button>
-          <button onclick="quitarDeClase('${r.rid}','${claseViendoID}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#ef4444"><i class="fa-solid fa-user-minus"></i></button>
+          <button onclick="quitarDeClase('${r.rid}','${claseId||claseViendoID}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem;color:#ef4444"><i class="fa-solid fa-user-minus"></i></button>
           <button onclick="showView('alumnos');seleccionarAlumno('${r.alumnoId}')" class="btn btn-ghost" style="font-size:.6rem;padding:.35rem .6rem"><i class="fa-solid fa-user"></i></button>
         </div>
     </div>`).join('');
-    // También guardar para mover
-    window._inscritosActuales=inscritos;
 }
 
 function renderListaMoverDiscip(){
@@ -1464,7 +1519,7 @@ async function ejecutarMover(){
         batch.update(db.collection('catalogo').doc(destId),{cupoDisponible:firebase.firestore.FieldValue.increment(-1)});
         await batch.commit();
         toast('🔄 Movido a '+dest.nombre,4000);cancelarMover();
-        await cargarInscritosDiscip(claseViendoID);
+        cargarInscritosDiscip(claseViendoID);
     }catch(e){toast('❌ '+e.message);}
 }
 
@@ -1473,7 +1528,7 @@ async function quitarDeClase(reservaId,claseId){
     try{
         await db.collection('catalogo').doc(claseId).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
         await db.collection('reservas').doc(reservaId).delete();
-        toast('🗑️ Alumno removido');await cargarInscritosDiscip(claseId);
+        toast('🗑️ Alumno removido');cargarInscritosDiscip(claseId);
     }catch(e){toast('❌ '+e.message);}
 }
 
