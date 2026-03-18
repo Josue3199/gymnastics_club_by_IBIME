@@ -281,10 +281,8 @@ async function registrarCobro(){
         if (typeof rtdb !== 'undefined') {
           try { const safeId = alumnoEnCaja.id.replace(/[.#$/[\]]/g,'_'); rtdb.ref('notificaciones/' + safeId).push({ tipo:'recibo', folio, monto, detalle, fecha: new Date().toLocaleDateString('es-MX'), metodo }); } catch(e) { console.warn('RTDB notification failed:', e); }
         }
-        const snap1=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pre-reserva').get();
-        const snap2=await db.collection('reservas').where('alumnoId','==',alumnoEnCaja.id).where('folio','==',folio).where('estado','==','pendiente_pago').get();
-        const todosLosDocs=[...snap1.docs,...snap2.docs];
-        await Promise.all(todosLosDocs.map(d=>db.collection('reservas').doc(d.id).update({estado:'confirmada',alertaMostrada:false,fechaConfirmacion:new Date().toLocaleDateString('es-MX')})));
+        const syncResult=await SyncModule.confirmarReservasPendientes(alumnoEnCaja.id,folio);
+        const todosLosDocs={length:syncResult.confirmadas};
         // Si hay clases desde el carrito de recepción, crear reservas confirmadas directamente
         if (window._cajaPendingClases && window._cajaPendingClases.length) {
           const batch2 = db.batch();
@@ -781,24 +779,32 @@ async function ejecutarMover(){
     if(!dest){toast('❌ Clase no encontrada');return;}
     if((dest.cupoDisponible??dest.cupo??0)<=0){toast('🔴 Sin lugares en clase destino');return;}
     try{
-        const batch=db.batch();
-        batch.update(db.collection('catalogo').doc(claseViendoID),{cupoDisponible:firebase.firestore.FieldValue.increment(1)});
-        batch.delete(db.collection('reservas').doc(alumnoMoverReservaID));
-        const nr=db.collection('reservas').doc();
-        batch.set(nr,{alumnoId:alumnoMoverID,alumnoNombre:$('moverAlumnoNombre').textContent,claseId:destId,claseNombre:dest.nombre,area:dest.area||'',estado:'confirmada',alertaMostrada:true,timestamp:Date.now()});
-        batch.update(db.collection('catalogo').doc(destId),{cupoDisponible:firebase.firestore.FieldValue.increment(-1)});
-        await batch.commit();
+        await SyncModule.moverAlumnoDeClase(alumnoMoverReservaID,claseViendoID,destId,dest);
         toast('🔄 Movido a '+dest.nombre,4000);cancelarMover();
         cargarInscritosDiscip(claseViendoID);
     }catch(e){toast('❌ '+e.message);}
 }
 
 async function quitarDeClase(reservaId,claseId){
-    if(!confirm('¿Quitar al alumno de esta clase?'))return;
+    // Detectar si la reserva tiene plan semanal para ofrecer eliminar todas las sesiones
+    let esPlan=false;
     try{
-        await db.collection('catalogo').doc(claseId).update({cupoDisponible:firebase.firestore.FieldValue.increment(1)});
-        await db.collection('reservas').doc(reservaId).delete();
-        toast('🗑️ Alumno removido');cargarInscritosDiscip(claseId);
+        const snap=await db.collection('reservas').doc(reservaId).get();
+        if(snap.exists)esPlan=!!(snap.data().planSemanal&&snap.data().slotKey);
+    }catch(_){}
+    let eliminarTodoElPlan=false;
+    if(esPlan){
+        const resp=confirm('Este alumno tiene un plan semanal.\n\n¿Eliminar TODAS las sesiones del plan (toda la semana)?\n\nAcepta = Eliminar todas · Cancela = Solo esta sesión');
+        if(resp===null)return; // usuario cerró el diálogo de plan (no se usa aquí, pero por claridad)
+        eliminarTodoElPlan=resp;
+        if(!confirm(eliminarTodoElPlan?'¿Confirmas eliminar TODAS las sesiones del plan semanal?':'¿Quitar al alumno solo de esta clase?'))return;
+    }else{
+        if(!confirm('¿Quitar al alumno de esta clase?'))return;
+    }
+    try{
+        const resultado=await SyncModule.quitarAlumnoDeClase(reservaId,claseId,{eliminarTodoElPlan});
+        toast('🗑️ '+(resultado.eliminadas>1?resultado.eliminadas+' sesiones eliminadas':'Alumno removido'));
+        cargarInscritosDiscip(claseId);
     }catch(e){toast('❌ '+e.message);}
 }
 
